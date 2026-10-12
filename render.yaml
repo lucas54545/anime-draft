@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: anime-draft-battle
+    runtime: node
+    buildCommand: echo "Sem dependencias para instalar"
+    startCommand: node server.js
+    healthCheckPath: /health

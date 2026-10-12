@@ -1,0 +1,26 @@
+ANIME DRAFT BATTLE 3.0 — VERSÃO CORRIGIDA
+
+CORREÇÃO IMPORTANTE: agora o jogo pode ser aberto diretamente no navegador, sem precisar iniciar um servidor para jogar contra bot ou com um amigo NO MESMO DISPOSITIVO.
+
+COMO JOGAR SEM SERVIDOR:
+1. Extraia o ZIP por completo.
+2. Dê dois cliques em ABRIR-JOGO.html.
+3. Clique em JOGAR CONTRA BOT ou 2 JOGADORES LOCAIS.
+4. Os jogadores começam com 20 moedas. Cada rodada tem dois personagens; ambos dão lances secretos pelo personagem DESTAQUE.
+5. O maior lance recebe DESTAQUE e paga suas moedas; o outro recebe o RESERVA de graça. Empates alternam o vencedor.
+6. Antes do leilão, o poder está oculto (???). Após a compra, os cinco atributos e o poder total são revelados.
+7. Depois de cinco rodadas, todos os atributos são comparados na batalha final.
+
+COMO JOGAR MULTIPLAYER DE VERDADE, EM DOIS CELULARES:
+Para desafiar pelo nome e aceitar convite online é necessário publicar o servidor Node.js, não basta arrastar a pasta no Netlify Drop.
+1. Instale Node.js 20+ para testar no PC ou publique este projeto em um serviço com Node e WebSocket.
+2. Na pasta anime_draft_battle_corrigido, execute: node server.js.
+3. Acesse http://localhost:3000 em dois navegadores na mesma máquina para testar os convites.
+4. Para pessoas em lugares diferentes, publique no Render ou em hospedagem que suporte WebSocket com processo ativo.
+5. Abra o mesmo link público em dois dispositivos e use nomes diferentes.
+
+FOTOS: O jogo tenta carregar imagens do Jikan / MyAnimeList. Se não houver internet, limite de consultas ou imagem correspondente, usa emojis como substituto.
+
+PERSONAGENS: 70 / 14 ANIMES. Notas fictícias, criadas apenas para o jogo.
+
+AVISO: Um arquivo .html isolado ou uma hospedagem estática não permite multiplayer síncrono. O modo local funciona sem servidor.
