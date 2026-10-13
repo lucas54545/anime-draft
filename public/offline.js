@@ -8,13 +8,34 @@ const sum=p=>p.stats.reduce((a,b)=>a+b,0);
 const btn=(text,id,style='btn-primary')=>'<button type="button" class="btn '+style+'" id="'+id+'">'+text+'</button>';
 const root=()=>$('offlineContent');
 let st=null,ticker=null,botWait=null;
+
+function tierClass(p){return ({'Comum':'common','Raro':'rare','Épico':'epic','Lendário':'legendary','Mítico':'mythic'})[p?.rarity]||'common';}
+function rarityTag(p){return p?.rarity?'<span class="rarity-chip rarity-'+tierClass(p)+'">✦ '+esc(p.rarity)+' · '+p.rating+'</span>':'';}
+function sound(type){if(window.playAnimeSfx)window.playAnimeSfx(type);}
+function historyPanel(){
+  const records=st.history||[];
+  const rows=records.length?records.map(h=>{
+    const price=h.price<0?'🕳️ '+Math.abs(h.price)+' no limbo':h.price>0?'🪙 '+h.price:'Sem custo';
+    return '<div class="history-entry"><span class="history-round">#'+String(h.round).padStart(2,'0')+'</span><div class="history-info"><b>'+esc(h.character.name)+'</b><small>'+esc(st.names[h.winner])+' · '+ATTR[h.slot]+'</small></div>'+rarityTag(h)+'<span class="history-price">'+price+'</span></div>';
+  }).join(''):'<p class="muted">Nenhum leilão concluído.</p>';
+  return '<details class="auction-history"><summary>📜 HISTÓRICO DE LEILÕES · '+records.length+' / 10</summary><div class="history-list">'+rows+'</div></details>';
+}
+function drawRandom(pool){
+ const weights=[['Comum',18],['Raro',30],['Épico',31],['Lendário',15],['Mítico',6]];
+ const buckets=weights.map(([rarity,weight])=>({weight,items:pool.filter(p=>p.rarity===rarity)})).filter(b=>b.items.length);
+ if(!buckets.length)return pool[Math.floor(Math.random()*pool.length)];
+ let x=Math.random()*buckets.reduce((sum,b)=>sum+b.weight,0);
+ for(const b of buckets){x-=b.weight;if(x<0)return b.items[Math.floor(Math.random()*b.items.length)];}
+ return buckets[buckets.length-1].items[0];
+}
+
 function timers(){clearInterval(ticker);clearTimeout(botWait);ticker=null;botWait=null;}
 function portrait(p){
   if(window.maybePhoto)window.maybePhoto(p);
   return '<div class="offline-portrait"><span>'+esc(p.emoji)+'</span>'+(window.imageMarkup?window.imageMarkup(p):'')+'</div>';
 }
 function stats(p){
-  return '<div class="local-power"><div class="local-power-total">⚡ PODER TOTAL <b>'+sum(p)+'</b></div><div class="local-stats">'+ATTR.map((label,i)=>'<span>'+esc(label)+' <strong>'+p.stats[i]+'</strong></span>').join('')+'</div></div>';
+  return rarityTag(p)+'<div class="local-power"><div class="local-power-total">⚡ PODER TOTAL <b>'+sum(p)+'</b></div><div class="local-stats">'+ATTR.map((label,i)=>'<span>'+esc(label)+' <strong>'+p.stats[i]+'</strong></span>').join('')+'</div></div>';
 }
 function slots(n){
   const t=st.teams[n],score=t.reduce((a,p,i)=>a+(p?.stats?.[i]||0),0);
@@ -47,7 +68,7 @@ function start(mode){
   st={mode,names:[first,mode==='bot'?'BOT':'Jogador 2'],budgets:[20,20],
       teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
       current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
-      winner:-1,price:0,bidMode:null,avoider:-1,reason:''};
+      winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
   show('offline');
   root().innerHTML='<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 20 MOEDAS CADA</span></div>'+
     '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.</p>'+
@@ -65,14 +86,10 @@ function draw(){
   timers();
   if(st.round===10){battle();return;}
   const pool=roster.filter(p=>!st.seen.includes(p.id));
-  let candidate=pool[Math.floor(Math.random()*pool.length)];
-  if(Math.random()<.27){
-    const weak=pool.filter(p=>sum(p)<290);
-    if(weak.length)candidate=weak[Math.floor(Math.random()*weak.length)];
-  }
+  const candidate=drawRandom(pool);
   st.seen.push(candidate.id);st.current=candidate;
   st.leader=-1;st.bid=0;st.bidMode=null;st.turn=free(st.round%2).length?st.round%2:1-st.round%2;
-  st.deadline=Date.now()+10000;st.phase='auction';
+  st.deadline=Date.now()+10000;st.phase='auction';st.lastBeepSecond=10;
   auction();schedule();
 }
 function updateClock(){
@@ -123,7 +140,7 @@ function auction(){
     '<div class="auction-buttons">'+(st.bidMode==='avoid'?'':btn('⚡ COMPRAR +'+next,'localRaise'))+
     ((st.bidMode==='buy'||!free(0).length||!free(1).length)?'':btn('🛡️ EVITAR '+neg,'localAvoid','btn-danger'))+
     (st.bidMode===null?'':btn(st.bidMode==='avoid'?'✅ PEGAR GRÁTIS':'✋ DESISTIR','localPass','btn-outline'))+'</div></div>'+
-    '<div class="offline-subtitle">⚔️ TIMES FORMADOS ATÉ AGORA</div>'+teams()+
+    '<div class="offline-subtitle">⚔️ TIMES FORMADOS ATÉ AGORA</div>'+teams()+historyPanel()+
     '<div class="offline-actions">'+btn('← SAIR','localExit','btn-outline')+'</div>';
   if($('localRaise'))$('localRaise').onclick=()=>bid(next);
   if($('localAvoid'))$('localAvoid').onclick=()=>bid(neg);
@@ -138,7 +155,7 @@ function bid(amount){
     if(amount<0&&(!free(0).length||!free(1).length))return;
     st.bidMode=amount<0?'avoid':'buy';
   }else if(amount!==st.bid+(st.bidMode==='avoid'?-1:1))return;
-  st.leader=st.turn;st.bid=amount;st.turn=1-st.turn;st.deadline=Date.now()+10000;
+  st.leader=st.turn;st.bid=amount;st.turn=1-st.turn;st.deadline=Date.now()+10000;st.lastBeepSecond=10;sound(amount<0?'avoid':'bid');
   if(!free(st.turn).length||Math.abs(st.bid)+1>st.budgets[st.turn]){endBid('rival não pode cobrir');return;}
   auction();schedule();
 }
@@ -154,7 +171,7 @@ function endBid(reason){
   }else winner=st.turn;
   if(!free(winner).length)winner=1-winner;
   st.winner=winner;st.avoider=avoider;st.price=price;
-  choose();
+  sound('confirm');choose();
   if(st.mode==='bot'&&winner===1)botWait=setTimeout(()=>chooseSlot(free(1)[Math.floor(Math.random()*free(1).length)]),900);
 }
 function choose(){
@@ -170,16 +187,17 @@ function choose(){
 function chooseSlot(slot){
   if(!st||st.phase!=='choose'||!free(st.winner).includes(slot))return;
   timers();st.phase='reveal';st.teams[st.winner][slot]=st.current;
-  const p=st.current;
+  const p=st.current;sound('place');
+  st.history.push({round:st.round+1,character:{id:p.id,name:p.name},winner:st.winner,price:st.price,slot,rarity:p.rarity,rating:p.rating});
   root().innerHTML=heading('PODER REVELADO!','O personagem entrou na posição escolhida. Agora os números aparecem.')+
     '<div class="offline-winner"><span>🎯 POSIÇÃO ESCOLHIDA: '+ATTR[slot]+'</span><h3>'+esc(p.name)+'</h3><p>'+esc(st.names[st.winner])+' colocou o personagem. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Pagou 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="offline-revealpair one-reveal"><div class="offline-revealcard">'+portrait(p)+'<h4>'+esc(p.name)+'</h4>'+stats(p)+'</div></div>'+
-    '<div class="offline-subtitle">⚔️ TIMES COMPLETADOS</div>'+teams()+
+    '<div class="offline-subtitle">⚔️ TIMES COMPLETADOS</div>'+teams()+historyPanel()+
     '<div class="offline-actions">'+btn(st.round===9?'⚔️ VER BATALHA FINAL':'PRÓXIMO LEILÃO →','localNext')+'</div>';
   $('localNext').onclick=()=>{st.round++;if(st.round>=10)battle();else draw();};
 }
 function battle(){
-  timers();st.phase='battle';
+  timers();st.phase='battle';sound('victory');
   const scores=[0,0],total=[0,0];
   const fights=ATTR.map((attr,i)=>{
     const a=st.teams[0][i],b=st.teams[1][i];
@@ -196,8 +214,16 @@ function battle(){
     '<div class="offline-score"><div><small>'+esc(st.names[0])+'</small><strong>'+total[0]+'</strong><span>'+scores[0]+' atributos vencidos</span></div><b>VS</b>'+
     '<div><small>'+esc(st.names[1])+'</small><strong>'+total[1]+'</strong><span>'+scores[1]+' atributos vencidos</span></div></div></div>'+
     '<div class="offline-compact-fights"><div class="battle-lane-head"><span>'+esc(st.names[0])+'</span><span>FOTOS NO CENTRO</span><span>'+esc(st.names[1])+'</span></div>'+fights+'</div>'+
-    '<div class="offline-actions">'+btn('🔄 JOGAR NOVAMENTE','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
-  $('offlineAgain').onclick=()=>start(st.mode);$('offlineHome').onclick=quit;
+    historyPanel()+'<div class="offline-actions">'+btn('🔄 REVANCHE','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
+  $('offlineAgain').onclick=()=>{
+    if(!st)return;
+    const names=[...st.names],mode=st.mode;
+    st={mode,names,budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
+      current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
+      winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
+    sound('confirm');draw();
+  };
+  $('offlineHome').onclick=quit;
 }
 $('localBotBtn').addEventListener('click',()=>start('bot'));
 $('localDuelBtn').addEventListener('click',()=>start('local'));
