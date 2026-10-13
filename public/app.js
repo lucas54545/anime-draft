@@ -2,6 +2,50 @@
 const $=id=>document.getElementById(id);
 const ATTR=['⚔️ FORÇA','🛡️ RESISTÊNCIA','🧠 QI','✨ HABILIDADE','💨 VELOCIDADE'];
 const SESSION_KEY='anime_draft_session_v2';
+
+const RARITY_CSS={'Comum':'common','Raro':'rare','Épico':'epic','Lendário':'legendary','Mítico':'mythic'};
+function rarityBadge(p){
+ if(!p?.rarity)return '';
+ return '<span class="rarity-chip rarity-'+(RARITY_CSS[p.rarity]||'common')+'">✦ '+safe(p.rarity)+(p.rating?' · '+p.rating:'')+'</span>';
+}
+let soundEnabled=(()=>{try{return localStorage.getItem('anime_draft_sound_v10')!=='off';}catch{return true}})(),audioContext=null;
+function soundUI(){
+ const button=$('soundToggle');if(!button)return;
+ button.textContent=soundEnabled?'🔊 SOM ON':'🔇 SOM OFF';
+ button.setAttribute('aria-pressed',String(soundEnabled));
+}
+function playAnimeSfx(type){
+ if(!soundEnabled)return;
+ try{
+  const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+  if(!audioContext)audioContext=new Audio();
+  if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+  const song={
+   bid:[[490,.08],[650,.10]],avoid:[[260,.12],[190,.14]],
+   place:[[420,.10],[610,.11],[880,.16]],victory:[[440,.14],[590,.14],[740,.14],[1050,.25]],
+   impact:[[170,.09],[100,.17]],confirm:[[510,.11],[690,.15]]
+  }[type]||[[510,.12]];
+  let delay=0;
+  for(const [frequency,length] of song){
+   const osc=audioContext.createOscillator(),volume=audioContext.createGain(),at=audioContext.currentTime+delay;
+   osc.type=type==='impact'?'triangle':'sine';osc.frequency.setValueAtTime(frequency,at);
+   volume.gain.setValueAtTime(.0001,at);volume.gain.exponentialRampToValueAtTime(.055,at+.015);
+   volume.gain.exponentialRampToValueAtTime(.0001,at+length);
+   osc.connect(volume);volume.connect(audioContext.destination);osc.start(at);osc.stop(at+length+.02);
+   delay+=length*.72;
+  }
+ }catch(e){console.debug('Áudio indisponível:',e.message);}
+}
+window.playAnimeSfx=playAnimeSfx;
+function historyMarkup(history,names){
+ if(!history?.length)return '<p class="muted">Nenhum leilão concluído.</p>';
+ return history.map(h=>{
+  const person=h.character||{},buyer=safe(names?.[h.winner]||'Jogador');
+  const price=h.price<0?'🕳️ '+Math.abs(h.price)+' moedas no limbo':h.price>0?'🪙 '+h.price+' moedas':'Sem custo';
+  return '<div class="history-entry"><span class="history-round">#'+String(h.round).padStart(2,'0')+'</span><div class="history-info"><b>'+safe(person.name||'?')+'</b><small>'+buyer+' · '+safe(ATTR[h.slot]||'')+'</small></div>'+rarityBadge(h)+'<span class="history-price">'+price+'</span></div>';
+ }).join('');
+}
+
 const saved=(()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY))||{}}catch{return {}}})();
 const model={socket:null,connected:false,name:saved.name||'',token:saved.token||makeToken(),logged:false,room:null,battle:null,invitation:null,online:[],roster:[]};
 const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v9'))||{}}catch{return {}}})();
@@ -39,6 +83,7 @@ function receive(data){
     case 'invite_sent':$('inviteStatus').textContent='✓ Convite enviado para '+data.to+'. Aguarde a resposta.';toast('Convite enviado!');break;
     case 'invite_declined':$('inviteStatus').textContent='Seu convite foi recusado por '+data.from+'.';toast('Seu amigo recusou o convite.');break;
     case 'room':model.room=data;model.battle=null;renderArena();break;
+    case 'rematch_status':if($('rematchStatus'))$('rematchStatus').textContent='⏳ '+data.voted+' de '+data.needed+' jogadores aceitaram a revanche.';break;
     case 'battle':model.room=null;model.battle=data;renderBattle(data);break;
     case 'left_room':model.room=null;model.battle=null;renderLobby();show('lobby');break;
   }
@@ -212,7 +257,7 @@ function characterCard(p){
 }
 function powerSummary(p){
   if(!p || !Array.isArray(p.stats)) return '';
-  return `<div class="power-summary" aria-label="Poder revelado de ${safe(p.name)}"><span>⚡ PODER TOTAL <strong>${p.power}</strong></span><div class="stat-row">${ATTR.map((a,i)=>`<span title="${safe(a)}">${safe(a.split(' ').slice(1).join(' '))} <b>${p.stats[i]}</b></span>`).join('')}</div></div>`;
+  return rarityBadge(p)+`<div class="power-summary" aria-label="Poder revelado de ${safe(p.name)}"><span>⚡ PODER TOTAL <strong>${p.power}</strong></span><div class="stat-row">${ATTR.map((a,i)=>`<span title="${safe(a)}">${safe(a.split(' ').slice(1).join(' '))} <b>${p.stats[i]}</b></span>`).join('')}</div></div>`;
 }
 function teamBoard(team,name){
   const partial=team.reduce((sum,p,i)=>sum+(p?.stats?.[i]||0),0);
@@ -254,6 +299,8 @@ function renderArena(){
   $('auctionPair').hidden=isReveal;
   $('auctionPair').innerHTML=(r.offered||[]).map(c=>characterCard(c)).join('');
   $('teamBoards').innerHTML=r.teams.map((team,i)=>teamBoard(team,r.names[i])).join('');
+  $('auctionHistoryCount').textContent=(r.history||[]).length+' / 10';
+  $('auctionHistoryList').innerHTML=historyMarkup(r.history,r.names);
   $('liveBidBanner').hidden=!isAuction;
   $('biddingArea').hidden=!isAuction||r.turn!==r.you;
   $('awaitBid').hidden=!isAuction||r.turn===r.you;
@@ -284,7 +331,7 @@ function renderArena(){
       const slots=r.teams[r.you]||[];
       options.innerHTML=ATTR.map((attr,i)=>'<button class="position-btn" type="button" data-place="'+i+'" '+(slots[i]?'disabled':'')+'><span>'+attr+'</span><b>'+(slots[i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('');
       options.querySelectorAll('[data-place]').forEach(button=>button.onclick=()=>{
-        if(send('place',{slot:Number(button.dataset.place)}))options.querySelectorAll('button').forEach(b=>b.disabled=true);
+        if(send('place',{slot:Number(button.dataset.place)})){playAnimeSfx('place');options.querySelectorAll('button').forEach(b=>b.disabled=true);}
       });
     }else{
       options.innerHTML='<div class="waiting-card">⏳ Aguardando o outro jogador escolher Força, Resistência, QI, Habilidade ou Velocidade.</div>';
@@ -298,15 +345,15 @@ function renderArena(){
 }
 function submitBid(){
   const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you)return;
-  if(send('bid',{amount:r.bidMode==='neutral'?1:r.minimum})){$('placeBid').disabled=true;}
+  if(send('bid',{amount:r.bidMode==='neutral'?1:r.minimum})){playAnimeSfx('bid');$('placeBid').disabled=true;}
 }
 function avoidBid(){
   const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you||r.bidMode==='buy')return;
-  if(send('bid',{amount:r.bidMode==='neutral'?-1:r.minimum}))$('avoidBid').disabled=true;
+  if(send('bid',{amount:r.bidMode==='neutral'?-1:r.minimum})){playAnimeSfx('avoid');$('avoidBid').disabled=true;}
 }
 function giveUpBid(){
   const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you||r.bidMode==='neutral')return;
-  if(send('pass')){$('passBid').disabled=true;}
+  if(send('pass')){playAnimeSfx('confirm');$('passBid').disabled=true;}
 }
 function cancelTimers(){clearInterval(auctionClock);auctionClock=null;gameTimers.forEach(t=>clearTimeout(t));gameTimers=[];}
 function renderBattle(data){
