@@ -292,20 +292,25 @@ const castJobs=new Map();
 const pendingIDs=new Set();
 function normName(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');}
 function setImage(person,url){
-  if(!url||!/^https:\/\//i.test(url))return;
-  // Só salva fotos que carregam. URLs mortas não estragam os cards.
-  const test=new Image();
-  test.onload=()=>{
-    photoCache[person.id]=url;pendingIDs.delete(person.id);
-    document.querySelectorAll('img[data-character="'+CSS.escape(person.id)+'"]').forEach(img=>{
-      img.onerror=function(){this.onerror=null;this.src=this.dataset.fallback};
-      img.src=url;img.hidden=false;
-    });
-    try{localStorage.setItem('anime_draft_photos_v9',JSON.stringify(photoCache));}catch{}
-  };
-  test.onerror=()=>{};test.referrerPolicy='no-referrer';test.src=url;
+  if(!url||!/^https:\/\//i.test(url))return Promise.resolve(false);
+  return new Promise(resolve=>{
+    const test=new Image();
+    test.onload=()=>{
+      photoCache[person.id]=url;pendingIDs.delete(person.id);
+      document.querySelectorAll('img[data-character]').forEach(img=>{
+        if(img.dataset.character!==person.id)return;
+        img.dataset.triedProxy='';
+        img.onerror=function(){window.animeImageFailed(this);};
+        if(img.getAttribute('src')!==url)img.src=url;
+      });
+      try{localStorage.setItem('anime_draft_photos_v9',JSON.stringify(photoCache));}catch{}
+      resolve(true);
+    };
+    test.onerror=()=>resolve(false);
+    test.referrerPolicy='no-referrer';test.src=url;
+  });
 }
-function matchImage(p,items){
+async function matchImage(p,items){
   const acceptable=new Set(characterAliases(p).map(normName));
   const matches=name=>{
     const norm=normName(name);
@@ -313,7 +318,7 @@ function matchImage(p,items){
     return acceptable.has(norm)||acceptable.has(reversed);
   };
   const found=(items||[]).find(x=>matches(x.name));
-  if(found)setImage(p,found.images?.jpg?.image_url||found.images?.webp?.image_url);
+  return found?await setImage(p,found.images?.jpg?.image_url||found.images?.webp?.image_url):false;
 }
 async function fetchJSON(url,options={}){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),9500);
@@ -326,10 +331,10 @@ async function fetchJSON(url,options={}){
 async function fetchAnimeCast(anime){
   if(!MAL_ANIME[anime])return;
   if(castJobs.has(anime))return castJobs.get(anime);
-  const job=fetchJSON('https://api.jikan.moe/v4/anime/'+MAL_ANIME[anime]+'/characters').then(body=>{
+  const job=fetchJSON('https://api.jikan.moe/v4/anime/'+MAL_ANIME[anime]+'/characters').then(async body=>{
     const items=(body.data||[]).map(x=>x.character).filter(Boolean);
     const roster=window.ANIME_ROSTER||model.roster||[];
-    for(const p of roster.filter(x=>x.anime===anime))matchImage(p,items);
+    await Promise.all(roster.filter(x=>x.anime===anime).map(p=>matchImage(p,items)));
   }).catch(()=>{castJobs.delete(anime);});
   castJobs.set(anime,job);return job;
 }
@@ -349,8 +354,7 @@ async function drainPhotos(){
       if(!photoURL(p.id)){
         for(const name of characterAliases(p).slice(0,4)){
           const body=await fetchJSON('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(name)+'&limit=15');
-          matchImage(p,body.data||[]);
-          if(photoURL(p.id))break;
+          if(await matchImage(p,body.data||[]))break;
         }
       }
       // 3. AniList como fonte extra se MyAnimeList não localizou retrato.
@@ -360,8 +364,7 @@ async function drainPhotos(){
           const body=await fetchJSON('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,variables:{search:name}})});
           const c=body.data?.Character;
           if(c&&new Set(characterAliases(p).map(normName)).has(normName(c.name?.full))){
-            setImage(p,c.image?.large);
-            break;
+            if(await setImage(p,c.image?.large))break;
           }
         }
       }
