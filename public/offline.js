@@ -303,13 +303,22 @@ function battle(){
       '<div class="versus-text right '+(y>x?'win':'')+'"><small>'+(st.mode==='local2v2'?'DUPLA B':'JOGADOR 2')+'</small><b>'+(b?esc(b.name):'—')+'</b><strong>'+y+'</strong></div></div>';
   }).join('');
   const winner=total[0]===total[1]?-1:total[0]>total[1]?0:1;
+  if(st.mode==='tournament')st.tournament.results[st.tournament.stage]={winner,totals:[...total]};
+  const tournamentEnding=st.mode==='tournament'
+    ?tournamentBracket()+
+      '<div class="tournament-verdict">'+(winner===0&&st.tournament.stage===2?'🏆 VOCÊ É O CAMPEÃO DO TORNEIO!':winner===0?'✅ CLASSIFICADO PARA A PRÓXIMA FASE!':winner===1?'❌ ELIMINADO DO TORNEIO':'🤝 EMPATE: A FASE PRECISA SER REPETIDA')+'</div>'
+    :'';
   root().innerHTML='<div class="offline-final"><span class="phase-pill">⚡ BATALHA FINAL • 5 CONFRONTOS</span><h2>'+(winner<0?'EMPATE!':esc(st.names[winner]).toUpperCase()+' VENCEU!')+'</h2>'+
     '<div class="offline-score"><div><small>'+esc(st.names[0])+'</small><strong>'+total[0]+'</strong><span>'+scores[0]+' atributos vencidos</span></div><b>VS</b>'+
     '<div><small>'+esc(st.names[1])+'</small><strong>'+total[1]+'</strong><span>'+scores[1]+' atributos vencidos</span></div></div></div>'+
     '<div class="offline-compact-fights"><div class="battle-lane-head"><span>'+esc(st.names[0])+'</span><span>FOTOS NO CENTRO</span><span>'+esc(st.names[1])+'</span></div>'+fights+'</div>'+
-    historyPanel()+'<div class="offline-actions">'+btn('🔄 REVANCHE','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
+    historyPanel()+tournamentEnding+'<div class="offline-actions">'+
+      (st.mode==='tournament'&&winner!==1&&(winner===-1||st.tournament.stage<2)?btn(winner===-1?'🔄 REPETIR FASE':st.tournament.stage===0?'🏆 IR PARA SEMIFINAL':'🏆 IR PARA FINAL','tournamentNext'):'')+
+      btn(st.mode==='tournament'?'🏆 NOVO TORNEIO':'🔄 REVANCHE','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
+  if(st.mode==='tournament'&&winner!==1&&(winner===-1||st.tournament.stage<2))$('tournamentNext').onclick=tournamentAdvance;
   $('offlineAgain').onclick=()=>{
     if(!st)return;
+    if(st.mode==='tournament'){start('tournament');return;}
     const names=[...st.names],mode=st.mode,members=[...(st.members||[])];
     st={mode,names,members,budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
       current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
