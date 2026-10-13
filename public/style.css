@@ -87,3 +87,24 @@
 .team-running-total{float:right;color:#d8fd57;font-size:.82em;letter-spacing:.04em}
 .battle-banner .scoreboards b{font-size:clamp(2.2rem,6vw,4.5rem)}
 .offline-final .offline-score strong{font-size:clamp(2rem,6vw,3.8rem)}
+
+/* V6 — único personagem por leilão, escolha antes dos poderes */
+.auction-pair.single-auction{grid-template-columns:minmax(0,380px);justify-content:center;margin:18px auto;max-width:440px}
+.single-auction .character-art{height:295px}
+.single-auction .offline-card-art{height:270px}
+.single-auction .character-info h4{font-size:33px}
+.single-auction .offline-card-copy strong{font-size:29px}
+.placement-area{margin:17px 0;padding:20px;background:linear-gradient(130deg,#273a4b,#141f32);border:1px solid #b9ed6780;border-radius:12px}
+.placement-area h3{font:900 30px/1.1 'Barlow Condensed',Impact,sans-serif;margin:10px 0}
+.placement-area p{color:#bdcbe1;font-size:13px;margin:4px 0 15px}
+.placement-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0}
+.position-btn{border:1px solid #435874;border-radius:9px;background:#172943;color:#f4f9ff;padding:18px 13px;display:flex;gap:15px;align-items:center;justify-content:space-between;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+.position-btn>span{font-size:13px;font-weight:800}
+.position-btn>b{font-size:11px;white-space:nowrap;color:#d8fd57}
+.position-btn:hover:not(:disabled){transform:translateY(-2px);border-color:#d8fd57;background:#2d4156}
+.position-btn:disabled{opacity:.38;cursor:not-allowed}
+.reveal-portrait{height:165px;width:140px;margin:13px auto;position:relative;display:grid;place-items:center;font-size:65px;border:1px solid #506b87;border-radius:8px;overflow:hidden}
+.reveal-portrait img{width:100%;height:100%;position:absolute;inset:0;object-fit:cover}
+.one-reveal{grid-template-columns:minmax(0,330px);justify-content:center}
+.offline-progress{display:flex;gap:4px}.offline-progress span{min-width:0;flex:1}
+@media(max-width:580px){.placement-options{grid-template-columns:1fr}.single-auction .character-art{height:230px}.single-auction .offline-card-art{height:225px}.single-auction .character-info h4{font-size:27px}}
