@@ -34,6 +34,21 @@ assert.ok(app.includes('function historyMarkup(')&&app.includes('function reques
 assert.ok(offline.includes('function historyPanel(')&&offline.includes('function rarityTag('));
 assert.ok(html.includes('id="soundToggle"')&&html.includes('id="battleRematch"'));
 assert.ok(read('public/style.css').includes('arena-impact'),'A batalha deve ter efeitos de anime');
+
+const htmlSquad=read('public/index.html'),css=read('public/style.css');
+for(const control of ['squadCreateBtn','squadJoinBtn','squadCodeInput','squadSide','squadWaiting','squadTeamA','squadTeamB','squadCopyBtn','squadLeaveBtn','localSquadBtn']){
+  assert.ok(htmlSquad.includes('id="'+control+'"'),'Controle 2v2 ausente: '+control);
+}
+for(const token of ['const squadLobbies = new Map()','function addSquadMember(','function syncSquadLobby(','function teamNames(','function removeSquadLobbyMember(',"'squad_create'","'squad_join'","'squad_leave'"]){
+  assert.ok(server.includes(token),'Servidor não suporta recurso 2v2: '+token);
+}
+assert.ok(server.includes("room.mode==='squad'?playerIdx%2:playerIdx"),'Ação dos integrantes da dupla precisa usar seu time');
+assert.ok(server.includes("room.mode==='squad'?4:2"),'Revanche 2v2 precisa de quatro votos');
+assert.ok(app.includes('function renderSquadLobby(')&&app.includes('function joinSquad('),'Lobby 2v2 não preparado');
+assert.ok(offline.includes("mode==='local2v2'"),'Modo 2v2 local indisponível');
+assert.ok(css.includes('.squad-lobby-columns'),'Design da sala 2v2 indisponível');
+console.log('✓ Modo 2v2 online/local, sala por código, duplas e revanche com quatro votos');
+
 console.log('✓ Elenco: 142 personagens / 38 animes');
 console.log('✓ Balanço, raridades secretas, histórico, revanche, limbo e interface');
 console.log('✓ Sintaxe de todos os arquivos JavaScript');
