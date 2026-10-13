@@ -61,14 +61,12 @@ for(const method of ['function tournamentBotDuel(','function tournamentAdvance('
 }
 assert.ok(offline.includes("st?.mode==='mystery'"),'Identidade precisa ficar oculta antes do leilão misterioso');
 assert.ok(offline.includes("['bot','mystery','roulette','tournament']"),'Modos novos contra BOT precisam funcionar');
-for(const method of ['function ffaNewAuction(','function ffaPlace(','function ffaFinish(','function duelFightStart(','function duelFinish(']){
-  assert.ok(extraModes.includes(method),'Modo independente V12 ausente: '+method);
+for(const method of ['function ffaNewAuction(','function ffaPlace(','function ffaFinish(']){
+  assert.ok(extraModes.includes(method),'Modo Todos Contra Todos local ausente: '+method);
 }
-const duelScoreBody=extraModes.slice(extraModes.indexOf('function calculateDuel('),extraModes.indexOf('function duelFightStart('));
-assert.ok(!duelScoreBody.includes('.stats['),'O confronto direto 5v5 não pode comparar atributos individuais');
-assert.ok(duelScoreBody.includes('rarity'),'O confronto direto deve usar raridade e sorte');
+assert.ok(!extraModes.includes('function duelSetup('),'Seleção livre antiga do 5v5 não pode permanecer no código');
 assert.ok(read('public/style.css').includes('.direct-clash'),'O confronto direto precisa de interface visual');
-console.log('✓ Cinco modos V12: Torneio, Mistério, Roleta, 4 jogadores FFA e duelo direto 5v5');
+console.log('✓ Cinco modos: Torneio, Mistério, Roleta, Todos Contra Todos e 5v5 com leilão');
 
 assert.ok(html.includes('id="arenaConnectionNotice"'),'Aviso de entrada local precisa existir');
 assert.ok(app.includes("$('loginBtn').disabled=false;"),'Botão de entrar não deve ficar bloqueado sem WebSocket');
