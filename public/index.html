@@ -35,10 +35,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=11.0">
-  <script src="./app.js?v=11.0" defer></script>
-  <script src="./characters-local.js?v=11.0" defer></script>
-  <script src="./offline.js?v=11.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=12.0">
+  <script src="./app.js?v=12.0" defer></script>
+  <script src="./characters-local.js?v=12.0" defer></script>
+  <script src="./offline.js?v=12.0" defer></script>
+  <script src="./special-modes.js?v=12.0" defer></script>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -53,14 +54,14 @@
         <div class="eyebrow"><span class="star">✦</span> アニメ • A ARENA DEFINITIVA DE ANIME</div>
         <h1>O MELHOR <span>DRAFT</span><br>VENCE A <em>BATALHA.</em></h1><div class="anime-hero-caption">✦ SHONEN TOURNAMENT / バトル アリーナ ✦</div>
         <p>Serão 10 leilões com um personagem por vez. Escolha cada posição sem conhecer os poderes, desafie amigos e some os atributos para vencer.</p>
-        <div class="hero-pills"><span>👥 NOVO: 2v2 EM DUPLAS</span><span>✨ 5 RARIDADES SECRETAS</span><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
+        <div class="hero-pills"><span>🏆 TORNEIO + 4 MODOS EXTRAS</span><span>👥 2v2 EM DUPLAS</span><span>✨ 5 RARIDADES SECRETAS</span><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
       </div>
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-1"></div><div class="orbit orbit-2"></div><span class="crosshair">✛</span><div class="hero-card hero-card-left"><span>⚡</span><small>POWER</small><b>???</b></div><div class="hero-vs">VS</div><div class="hero-card hero-card-right"><span>🔥</span><small>SKILL</small><b>???</b></div><div class="orbit-label">ANIME DRAFT / RANKED ARENA</div></div>
     </section>
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 11.0 • NOVO 2v2</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 12.0 • 5 NOVOS MODOS</span></div>
 
         <section id="lobby" class="screen panel-body">
           <div id="loginBox" class="login-grid">
@@ -114,11 +115,25 @@
             <div class="local-label">⚡ JOGUE AGORA, SEM INSTALAR SERVIDOR</div>
             <p>Teste o leilão contra o computador ou com um amigo no mesmo aparelho. Para jogar em celulares diferentes, publique a versão com servidor.</p>
             <div class="action-grid"><button id="localBotBtn" class="btn btn-primary" type="button">🤖 JOGAR CONTRA BOT</button><button id="localDuelBtn" class="btn btn-outline" type="button">👥 2 JOGADORES LOCAIS</button><button id="localSquadBtn" class="btn btn-outline" type="button">⚔️ 2v2 LOCAL (4 PESSOAS)</button></div>
+<div class="extra-modes-start">
+  <div class="extra-modes-heading"><span>🎮 NOVOS MODOS DE JOGO</span><small>ESCOLHA SUA ARENA</small></div>
+  <div class="extra-mode-grid">
+    <button type="button" id="localTournamentBtn" class="extra-mode-card"><span class="extra-mode-symbol">🏆</span><b>TORNEIO</b><small>8 participantes • mata-mata contra bots</small></button>
+    <button type="button" id="localMysteryBtn" class="extra-mode-card"><span class="extra-mode-symbol">🎭</span><b>LEILÃO MISTERIOSO</b><small>Só o anime é revelado no lance</small></button>
+    <button type="button" id="localRouletteBtn" class="extra-mode-card"><span class="extra-mode-symbol">🎰</span><b>ROLETA</b><small>Bônus e efeitos em cada leilão</small></button>
+    <button type="button" id="ffaBtn" class="extra-mode-card"><span class="extra-mode-symbol">👑</span><b>TODOS CONTRA TODOS</b><small>4 jogadores • 20 leilões • 1 campeão</small></button>
+    <button type="button" id="direct5v5Btn" class="extra-mode-card"><span class="extra-mode-symbol">⚔️</span><b>PERSONAGENS 5v5</b><small>Duelo direto entre personagens, sem atributos</small></button>
+  </div>
+  <p class="small-note">Torneio, Mistério e Roleta usam bot. Todos Contra Todos e 5v5 funcionam no mesmo aparelho.</p>
+</div>
           </div>
         </section>
 
         <section id="offline" class="screen panel-body" hidden>
           <div id="offlineContent"></div>
+        </section>
+        <section id="special" class="screen panel-body" hidden>
+          <div id="specialContent"></div>
         </section>
 
         <section id="arena" class="screen panel-body" hidden>
