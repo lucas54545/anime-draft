@@ -4,6 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const {createSpecialMultiplayer} = require('./special-server');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = path.join(__dirname, 'public');
@@ -28,9 +29,10 @@ function issue(user, data) { if (user && user.conn) send(user.conn, data); }
 function error(ws, message) { send(ws, {type: 'error', message}); }
 function userFor(ws) { return ws.user && users.get(ws.user.token) === ws.user ? ws.user : null; }
 function whoOnline() {
-  return [...users.values()].filter(u => u.conn).map(u => ({name:u.name, busy:!!(u.roomId||u.squadCode)}));
+  return [...users.values()].filter(u => u.conn).map(u => ({name:u.name, busy:!!(u.roomId||u.squadCode||u.specialLobbyCode||u.specialGameId)}));
 }
 function presence() { const payload={type:'presence',players:whoOnline()}; for (const u of users.values()) issue(u,payload); }
+const specialMultiplayer=createSpecialMultiplayer({users,roster:ROSTER,issue,presence});
 function teamNames(room){
   if(room.mode!=='squad')return [room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'];
   return [0,1].map(side=>[room.players[side]?.name,room.players[side+2]?.name].filter(Boolean).join(' + '));
@@ -275,22 +277,28 @@ function message(ws, data) {
     if(existing && existing.token!==token)return error(ws,'Esse nome já está sendo usado. Escolha outro.');
     let user=users.get(token);
     if(user&&user.conn&&user.conn!==ws){send(user.conn,{type:'replaced'});closeWS(user.conn);}
-    if(user && user.roomId && user.name!==name)return error(ws,'Termine sua partida antes de mudar seu nome.');
+    if(user && (user.roomId||user.specialGameId||user.specialLobbyCode||user.squadCode) && user.name!==name)return error(ws,'Termine sua partida antes de mudar seu nome.');
     if(user){user.name=name;user.conn=ws;}
     else {user={token,name,conn:ws,roomId:null}; users.set(token,user);}
     ws.user=user;
     send(ws,{type:'welcome',name,online:whoOnline()});
     if(user.roomId){const r=rooms.get(user.roomId); if(r){ const side=r.players.findIndex(p=>p?.token===token);if(side>=0){if(r.phase==='battle')send(ws,r.battle);else send(ws,roomView(r,r.mode==='squad'?side%2:side));} }else user.roomId=null;}
     if(user.squadCode){const waiting=squadLobbies.get(user.squadCode);if(waiting)send(ws,lobbyPayload(waiting));else user.squadCode=null;}
+    specialMultiplayer.resume(user);
     presence();return;
   }
   const user=userFor(ws);if(!user)return error(ws,'Digite seu nome para entrar.');
+  if(String(kind||'').startsWith('special_')){
+    const output=specialMultiplayer.handle(user,data);
+    if(output?.error)error(ws,output.error);
+    return;
+  }
   if(kind==='invite'){
-    if(user.roomId||user.squadCode)return error(ws,'Você já está em uma sala ou batalha.');
+    if(user.roomId||user.squadCode||user.specialGameId||user.specialLobbyCode)return error(ws,'Você já está em uma sala ou batalha.');
     const recipient=findByName(data.to);
     if(!recipient)return error(ws,'Amigo não encontrado. Ele precisa estar online com esse nome.');
     if(recipient.token===user.token)return error(ws,'Você não pode desafiar a si mesmo.');
-    if(recipient.roomId||recipient.squadCode)return error(ws,'Esse amigo já está em uma sala ou batalha.');
+    if(recipient.roomId||recipient.squadCode||recipient.specialGameId||recipient.specialLobbyCode)return error(ws,'Esse amigo já está em uma sala ou batalha.');
     const inv={id:id(),from:user.token,to:recipient.token,expires:Date.now()+120000};
     invites.set(inv.id,inv);issue(recipient,{type:'invite_received',id:inv.id,from:user.name});
     issue(user,{type:'invite_sent',to:recipient.name});return;
@@ -301,23 +309,23 @@ function message(ws, data) {
     invites.delete(inv.id);
     const challenger=users.get(inv.from);
     if(data.accept!==true){issue(challenger,{type:'invite_declined',from:user.name});return;}
-    if(!challenger?.conn||challenger.roomId||user.roomId||challenger.squadCode||user.squadCode)return error(ws,'Um dos jogadores não está disponível.');
+    if(!challenger?.conn||challenger.roomId||user.roomId||challenger.squadCode||user.squadCode||challenger.specialGameId||user.specialGameId||challenger.specialLobbyCode||user.specialLobbyCode)return error(ws,'Um dos jogadores não está disponível.');
     clearPending(user);clearPending(challenger);
     makeRoom(challenger,user,'online');return;
   }
   if(kind==='bot'){
-    if(user.roomId||user.squadCode)return error(ws,'Saia da sala atual antes de começar outra.');
+    if(user.roomId||user.squadCode||user.specialGameId||user.specialLobbyCode)return error(ws,'Saia da sala atual antes de começar outra.');
     makeRoom(user,null,'bot');return;
   }
   if(kind==='squad_create'){
-    if(user.roomId||user.squadCode)return error(ws,'Saia da sala atual antes de criar outra.');
+    if(user.roomId||user.squadCode||user.specialGameId||user.specialLobbyCode)return error(ws,'Saia da sala atual antes de criar outra.');
     const code=generateSquadCode();
     const lobby={code,host:user.token,members:[{token:user.token,side:0}],created:Date.now()};
     squadLobbies.set(code,lobby);user.squadCode=code;
     syncSquadLobby(lobby);presence();return;
   }
   if(kind==='squad_join'){
-    if(user.roomId||user.squadCode)return error(ws,'Saia da sala atual antes de entrar em outra.');
+    if(user.roomId||user.squadCode||user.specialGameId||user.specialLobbyCode)return error(ws,'Saia da sala atual antes de entrar em outra.');
     const code=String(data.code||'').trim().toUpperCase();
     if(!/^[A-Z2-9]{6}$/.test(code))return error(ws,'Código 2v2 inválido. Digite os 6 caracteres da sala.');
     const lobby=squadLobbies.get(code);
@@ -547,7 +555,7 @@ function sendFrame(socket,str,opcode=1){
 }
 function closeWS(ws){
   if(!ws||ws.closed)return;ws.closed=true;clients.delete(ws);
-  if(ws.user && ws.user.conn===ws){ws.user.conn=null;presence();}
+  if(ws.user && ws.user.conn===ws){ws.user.conn=null;specialMultiplayer.onDisconnect(ws.user);presence();}
   try{ws.socket.end();}catch{}
 }
 function parseFrames(ws,chunk){
@@ -583,6 +591,6 @@ server.on('upgrade',(req,socket,head)=>{
 });
 setInterval(()=>{
   for(const [key,inv] of invites)if(inv.expires<Date.now())invites.delete(key);
-  for(const [token,u] of users)if(!u.conn && !u.roomId)users.delete(token);
+  for(const [token,u] of users)if(!u.conn && !u.roomId && !u.specialGameId && !u.specialLobbyCode && !u.squadCode)users.delete(token);
 },30000).unref();
 server.listen(PORT,'0.0.0.0',()=>console.log(`Anime Draft Battle pronto: http://localhost:${PORT}`));
