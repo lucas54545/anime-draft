@@ -76,8 +76,9 @@ function respond(accept){
 }
 function photoURL(id){return typeof photoCache[id]==='string'?photoCache[id]:'';}
 function imageMarkup(person,extraClass=''){
-  const url=photoURL(person.id);
-  return `<img class="character-img ${extraClass}" data-character="${safe(person.id)}" src="${safe(url)}" alt="Retrato de ${safe(person.name)}" loading="eager" referrerpolicy="no-referrer" ${url?'':'hidden'} onerror="this.hidden=true">`;
+  if(!person||!person.id)return '';
+  const url=photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id));
+  return '<img class="character-img '+extraClass+'" data-character="'+safe(person.id)+'" src="'+safe(url)+'" alt="Imagem de '+safe(person.name)+'" loading="eager" referrerpolicy="no-referrer" '+(url?'':'hidden')+' onerror="this.hidden=true">';
 }
 // Matching images from Jikan's anime cast first, with a character search as fallback.
 // The queries are cached so the same photo doesn't require new requests every round.
@@ -143,9 +144,9 @@ async function drainPhotos(){
   }
   photoBusy=false;
 }
-function characterCard(p,role){
+function characterCard(p){
   maybePhoto(p);
-  return `<div class="character-card ${role==='highlight'?'featured':''}"><div class="character-art"><span class="emoji">${safe(p.emoji)}</span>${imageMarkup(p)}<span class="character-label">${role==='highlight'?'⭐ DESTAQUE NO LEILÃO':'🎲 PERSONAGEM RESERVA'}</span></div><div class="character-info"><small>${safe(p.anime)}</small><h4>${safe(p.name)}</h4><div class="secret">🔒 FORÇA / QI / VELOCIDADE: <b>???</b></div></div></div>`;
+  return '<div class="character-card featured"><div class="character-art"><span class="emoji">'+safe(p.emoji)+'</span>'+imageMarkup(p)+'<span class="character-label">⭐ ÚNICO PERSONAGEM DO LEILÃO</span></div><div class="character-info"><small>'+safe(p.anime)+'</small><h4>'+safe(p.name)+'</h4><div class="secret">🔒 FORÇA · RESISTÊNCIA · QI · HABILIDADE · VELOCIDADE: <b>???</b></div></div></div>';
 }
 function powerSummary(p){
   if(!p || !Array.isArray(p.stats)) return '';
@@ -168,32 +169,50 @@ function updateAuctionTimer(){
 }
 function renderArena(){
   show('arena');const r=model.room;if(!r)return;
+  const isAuction=r.phase==='auction',isPlace=r.phase==='place',isReveal=r.phase==='reveal';
   const myBudget=r.budgets[r.you];
-  $('roundLabel').textContent=`RODADA ${String(Math.min(r.round+1,5)).padStart(2,'0')} / 05`;
-  $('steps').innerHTML=Array.from({length:5},(_,i)=>`<span class="${i<r.round?'done':i===r.round?'active':''}"></span>`).join('');
+  $('roundLabel').textContent='LEILÃO '+String(Math.min(r.round+1,10)).padStart(2,'0')+' / 10';
+  $('steps').innerHTML=Array.from({length:10},(_,i)=>'<span class="'+(i<r.round?'done':i===r.round?'active':'')+'"></span>').join('');
   $('matchName0').textContent=r.names[0];$('matchName1').textContent=r.names[1];
   $('budget0').textContent=r.budgets[0];$('budget1').textContent=r.budgets[1];
-  $('arenaPhase').textContent=r.phase==='auction'?'LEILÃO DE 10 SEGUNDOS':'PODERES REVELADOS';
-  $('auctionTitle').textContent=(r.phase==='auction'?'LEILÃO DE ':'RESULTADO DE ')+ATTR[r.round];
-  $('auctionCaption').textContent=r.phase==='auction'?'Quem dá o maior lance leva o DESTAQUE. O rival tem 10 segundos para aumentar a oferta em 1 moeda ou desistir.':'O vencedor recebeu o destaque, e o outro jogador ficou com o reserva. Poderes revelados!';
-  $('auctionPair').innerHTML=r.offered.map((c,i)=>characterCard(c,i===0?'highlight':'backup')).join('');
+  $('arenaPhase').textContent=isAuction?'LEILÃO • UM PERSONAGEM':isPlace?'ESCOLHA DO ATRIBUTO':'PODERES REVELADOS';
+  $('auctionTitle').textContent=isAuction?'QUAL JOGADOR VAI LEVAR?':isPlace?'ESCOLHA O ATRIBUTO ANTES DE REVELAR':'PERSONAGEM REVELADO!';
+  $('auctionCaption').textContent=isAuction?'Um personagem por leilão. O rival tem 10 segundos para aumentar o lance em uma moeda ou desistir.':isPlace?'Somente o vencedor escolhe a posição. O personagem fica oculto até confirmar.':'Os poderes foram revelados após a escolha do atributo. Agora começa o próximo leilão!';
+  $('auctionPair').hidden=isReveal;
+  $('auctionPair').innerHTML=(r.offered||[]).map(c=>characterCard(c)).join('');
   $('teamBoards').innerHTML=r.teams.map((team,i)=>teamBoard(team,r.names[i])).join('');
-  const isAuction=r.phase==='auction';
   $('liveBidBanner').hidden=!isAuction;
   $('biddingArea').hidden=!isAuction||r.turn!==r.you;
   $('awaitBid').hidden=!isAuction||r.turn===r.you;
-  $('reveal').hidden=r.phase!=='reveal';
+  $('placementArea').hidden=!isPlace;
+  $('reveal').hidden=!isReveal;
   $('currentBid').textContent=r.currentBid;
-  $('bidLeader').textContent=r.leader<0?'Ninguém ofereceu ainda. '+r.names[r.turn]+' começa.':r.names[r.leader]+' está ganhando com '+r.currentBid+' moeda(s).';
+  $('bidLeader').textContent=r.leader<0?'Nenhum lance ainda. '+r.names[r.turn]+' começa.':r.names[r.leader]+' está ganhando com '+r.currentBid+' moeda(s).';
   $('budgetHint').textContent=myBudget;
   $('bidValue').textContent=r.minimum;
   $('placeBid').textContent='⚡ OFERECER '+r.minimum+' MOEDA'+(r.minimum!==1?'S':'');
-  $('waitingMessage').textContent=r.names[r.turn]+' tem 10 segundos para cobrir o lance ou desistir.';
+  $('waitingMessage').textContent=r.names[r.turn]+' tem 10 segundos para cobrir ou desistir.';
   clearInterval(auctionClock);auctionClock=null;
   if(isAuction){updateAuctionTimer();auctionClock=setInterval(updateAuctionTimer,125);}
-  if(r.phase==='reveal' && r.result){
-    const win=r.result.winner,they=win===r.you;
-    $('reveal').innerHTML=`<div class="section-eyebrow">RESULTADO DO LEILÃO</div><h3>${they?'🏆 VOCÊ GANHOU O DESTAQUE!':'⚔ '+safe(r.names[win]).toUpperCase()+' LEVOU O DESTAQUE'}</h3><p>${safe(r.names[win])} ganhou <b>${safe(r.result.offers[0].name)}</b> por 🪙 ${r.result.price}. ${safe(r.names[1-win])} recebeu <b>${safe(r.result.offers[1].name)}</b> gratuitamente.</p><div class="reveal-powers">${r.result.offers.map(p=>`<div class="reveal-fighter"><span>${safe(p.emoji)} ${safe(p.name)}</span>${powerSummary(p)}</div>`).join('')}</div><p>Próximo leilão em instantes…</p>`;
+  if(isPlace){
+    const choosing=r.placer===r.you;
+    $('placeTitle').textContent=choosing?'VOCÊ GANHOU! ESCOLHA ONDE COLOCAR':r.names[r.placer]+' ESTÁ ESCOLHENDO';
+    $('placeHint').textContent=choosing?'Você levou '+r.pending.name+'. Escolha uma posição livre para revelar o poder!':r.names[r.placer]+' levou '+r.pending.name+'. Aguarde a escolha para revelar os números.';
+    const options=$('placementOptions');
+    if(choosing){
+      const slots=r.teams[r.you]||[];
+      options.innerHTML=ATTR.map((attr,i)=>'<button class="position-btn" type="button" data-place="'+i+'" '+(slots[i]?'disabled':'')+'><span>'+attr+'</span><b>'+(slots[i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('');
+      options.querySelectorAll('[data-place]').forEach(button=>button.onclick=()=>{
+        if(send('place',{slot:Number(button.dataset.place)}))options.querySelectorAll('button').forEach(b=>b.disabled=true);
+      });
+    }else{
+      options.innerHTML='<div class="waiting-card">⏳ Aguardando o outro jogador escolher Força, Resistência, QI, Habilidade ou Velocidade.</div>';
+    }
+  }
+  if(isReveal&&r.result){
+    const win=r.result.winner,me=win===r.you,f=r.result.fighter;
+    maybePhoto(f);
+    $('reveal').innerHTML='<div class="section-eyebrow">🎯 ATRIBUTO ESCOLHIDO: '+ATTR[r.result.slot]+'</div><h3>'+(me?'🏆 VOCÊ GANHOU!':'⚔ '+safe(r.names[win]).toUpperCase()+' GANHOU!')+'</h3><p>'+safe(r.names[win])+' colocou <b>'+safe(f.name)+'</b> em <b>'+ATTR[r.result.slot]+'</b> por 🪙 '+r.result.price+'. Agora os poderes estão revelados.</p><div class="reveal-portrait">'+safe(f.emoji)+imageMarkup(f)+'</div>'+powerSummary(f)+'<p>O próximo personagem pode ser ainda mais forte!</p>';
   }
 }
 function submitBid(){
