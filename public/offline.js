@@ -55,6 +55,13 @@ function heading(title,desc){
     Array.from({length:10},(_,i)=>'<span class="'+(i<st.round?'done':i===st.round?'current':'')+'"></span>').join('')+'</div>';
 }
 function card(p){
+  if(st?.mode==='mystery'&&['auction','choose'].includes(st.phase)){
+    return '<div class="offline-card mystery-auction-card"><div class="offline-card-art">'+
+      '<div class="mystery-art"><span class="mystery-silhouette">?</span><span class="mystery-stars">✦ ✧ ✦</span></div>'+
+      '<span class="offline-tag">🎭 IDENTIDADE ESCONDIDA</span></div>'+
+      '<div class="offline-card-copy"><small>ANIME DE ORIGEM: '+esc(p.anime)+'</small>'+
+      '<strong>PERSONAGEM MISTERIOSO</strong><div class="offline-unknown">🔒 Nome, raridade e atributos: <b>???</b></div></div></div>';
+  }
   return '<div class="offline-card"><div class="offline-card-art">'+portrait(p)+'<span class="offline-tag">⭐ PERSONAGEM DO LEILÃO</span></div>'+
     '<div class="offline-card-copy"><small>'+esc(p.anime)+'</small><strong>'+esc(p.name)+'</strong>'+
     '<div class="offline-unknown">🔒 FORÇA · RESISTÊNCIA · QI · HABILIDADE · VELOCIDADE: <b>???</b></div></div></div>';
@@ -186,6 +193,7 @@ function endBid(reason){
 }
 function choose(){
   const n=st.winner,p=st.current;
+  const chosenName=st.mode==='mystery'?'um personagem misterioso de '+esc(p.anime):esc(p.name);
   root().innerHTML=heading('ESCOLHA ONDE COLOCAR','Os atributos numéricos continuam escondidos até confirmar a posição.')+
     '<div class="offline-winner"><span>🏆 VENCEDOR DO LEILÃO</span><h3>'+esc(st.names[n])+'</h3><p>Levou '+esc(p.name)+'. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Preço 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="auction-pair single-auction">'+card(p)+'</div>'+
