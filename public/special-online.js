@@ -70,11 +70,12 @@ function showLobby(data){
   $('spCopy').onclick=()=>copyLink(data.code);attachLeave();
 }
 function teamRows(data){
+  const labels=data.mode==='direct'?Array.from({length:5},(_,i)=>'PERSONAGEM '+(i+1)):ATTR;
   return '<details class="auction-history sp-team-details"><summary>⚔️ VER EQUIPES E PERSONAGENS</summary>'+
     '<div class="sp-team-grid">'+data.teams.map((team,i)=>'<div class="sp-team-entry"><b>'+escape(data.names[i])+' · 🪙 '+(data.budgets?.[i]??0)+'</b>'+
       Array.from({length:5},(_,j)=>{
         const p=team[j]||null;
-        return '<div class="sp-team-character"><span>'+ATTR[j]+'</span><b>'+escape(p?.name||'—')+'</b><strong>'+(p?.stats?.[j]??'?')+'</strong></div>';
+        return '<div class="sp-team-character"><span>'+labels[j]+'</span><b>'+escape(p?.name||'—')+'</b><strong>'+(p?.stats?(data.mode==='direct'?p.stats.reduce((a,b)=>a+b,0):p.stats[j]):'?')+'</strong></div>';
       }).join('')+'</div>').join('')+'</div></details>';
 }
 function history(data){
@@ -130,7 +131,7 @@ function renderAuction(data){
   }
   return headline(NAMES[data.mode],data.mode==='ffa'?
     'Quatro jogadores, 20 leilões e cinco personagens por pessoa. Lances por turno, com 10 segundos para responder.':
-    'Dez leilões, dez segundos por resposta. A raridade aparece somente depois da posição escolhida.')+
+    (data.mode==='direct'?'5v5 online: 10 leilões e 50 moedas por pessoa. O time que somar mais poder dos cinco personagens vence.':'Dez leilões, dez segundos por resposta. A raridade aparece somente depois da posição escolhida.'))+
     actionInfo(data)+bracketView(data.bracket)+
     (data.event?'<div class="roulette-event"><div class="roulette-wheel">🎰</div><div><span>EFEITO DA RODADA</span><h3>'+escape(data.event.name)+'</h3><p>'+escape(data.event.description)+'</p></div></div>':'')+
     rowOfWallets(data)+auctionCard(data)+
@@ -144,59 +145,29 @@ function renderAuction(data){
 }
 function renderPlace(data){
   const yours=data.placer===data.you,p=data.current;
+  const positions=data.mode==='direct'?Array.from({length:5},(_,i)=>'⚔️ PERSONAGEM '+(i+1)):ATTR;
   return headline('🎯 ESCOLHA A POSIÇÃO',yours?
     'Seu time recebeu o personagem. Escolha o lugar antes dos poderes aparecerem.':
     escape(data.names[data.placer])+' está escolhendo o lugar do personagem.')+
     actionInfo(data)+bracketView(data.bracket)+rowOfWallets(data)+auctionCard(data)+
     '<p class="sp-pick-note">⏱️ <b id="spClock">—</b> segundos para a escolha. Se o tempo acabar, uma posição livre é preenchida automaticamente.</p>'+
-    (yours?'<div class="placement-options">'+ATTR.map((a,i)=>'<button type="button" class="position-btn" data-sp-slot="'+i+'" '+(data.teams[data.you][i]?'disabled':'')+'><span>'+a+'</span><b>'+(data.teams[data.you][i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('')+'</div>':
+    (yours?'<div class="placement-options">'+positions.map((a,i)=>'<button type="button" class="position-btn" data-sp-slot="'+i+'" '+(data.teams[data.you][i]?'disabled':'')+'><span>'+a+'</span><b>'+(data.teams[data.you][i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('')+'</div>':
       '<div class="waiting-card">⏳ Aguarde a outra pessoa escolher a posição.</div>')+
     teamRows(data)+history(data)+leaveButton();
 }
 function renderReveal(data){
   const p=data.result?.fighter;
+  const position=data.mode==='direct'?'PERSONAGEM '+(data.result.slot+1):ATTR[data.result?.slot];
   return headline('✨ PODER REVELADO!',escape(data.names[data.result?.winner]||'Jogador')+' ficou com o personagem!')+
     actionInfo(data)+bracketView(data.bracket)+rowOfWallets(data)+
     '<div class="sp-revealed">'+portrait(p)+'<div><h3>'+escape(p?.name||'Personagem')+'</h3>'+rarity(p)+
-    '<p>Posição: '+ATTR[data.result?.slot]+'</p><div class="sp-stats">'+ATTR.map((a,i)=>'<span>'+a+' <b>'+p.stats[i]+'</b></span>').join('')+'</div>'+
+    '<p>Posição: '+position+'</p><div class="sp-stats">'+ATTR.map((a,i)=>'<span>'+a+' <b>'+p.stats[i]+'</b></span>').join('')+'</div>'+
     '<small>Próximo leilão inicia automaticamente.</small></div></div>'+teamRows(data)+history(data)+leaveButton();
-}
-function directDraft(data){
-  const yourTurn=data.turn===data.you;
-  const roster=(window.ANIME_ROSTER||[]).filter(p=>!data.used.includes(p.id));
-  const names=data.names;
-  const cards=data.teams.map((team,i)=>'<div class="sp-direct-team"><b>'+escape(names[i])+' · '+team.length+'/5</b><div>'+
-    Array.from({length:5},(_,index)=>'<div class="sp-direct-slot">'+(team[index]?portrait(team[index]):'<div class="sp-photo sp-unknown">?</div>')+
-      '<small>'+escape(team[index]?.name||'Livre')+'</small></div>').join('')+'</div></div>').join('');
-  return headline('⚔️ 5v5 ONLINE • MONTE SEU TIME','Cada pessoa escolhe cinco personagens, alternando as escolhas. Não se compara nenhum atributo individual nas batalhas.')+
-    '<div class="sp-draft-teams">'+cards+'</div><div class="sp-pick-note"><b>'+escape(names[data.turn])+'</b> está escolhendo. ⏱️ <b id="spClock">—</b> s</div>'+
-    (yourTurn?'<div class="sp-online-pick"><label>BUSCAR PERSONAGEM<input id="spDirectSearch" placeholder="Digite um nome ou anime"></label>'+
-      '<label>PERSONAGEM<select id="spDirectSelect"></select></label><div id="spDirectPreview"></div>'+
-      btn('➕ ESCOLHER PERSONAGEM','spDirectPick')+'</div>':
-      '<div class="waiting-card">⏳ Aguarde seu adversário selecionar um personagem.</div>')+
-    '<p class="sp-help">Quando o tempo acabar, o servidor escolherá um personagem automaticamente.</p>'+leaveButton();
-}
-function directBouts(data){
-  const last=data.bouts?.[data.round];
-  if(!last)return headline('PREPARANDO LUTAS','Os personagens foram escolhidos. Aguarde...');
-  const a=last.fighters[0],b=last.fighters[1];
-  const scores=[0,1].map(i=>data.bouts.filter(bout=>bout.winner===i).length);
-  return headline('⚔️ CONFRONTO '+(data.round+1)+' DE 5','Resultados calculados no servidor pela raridade e por uma variação aleatória. Sem comparar atributos individuais.')+
-    '<div class="special-battle-score"><div><small>'+escape(data.names[0])+'</small><strong>'+scores[0]+'</strong></div><span>VS</span><div><small>'+escape(data.names[1])+'</small><strong>'+scores[1]+'</strong></div></div>'+
-    '<div class="direct-clash"><div class="direct-fighter '+(last.winner===0?'winner':'')+'">'+portrait(a)+rarity({rarity:last.rarities[0]})+
-    '<h3>'+escape(a.name)+'</h3><strong>⚔️ '+last.powers[0]+'</strong></div>'+
-    '<span class="direct-vs">VS</span>'+
-    '<div class="direct-fighter '+(last.winner===1?'winner':'')+'">'+portrait(b)+rarity({rarity:last.rarities[1]})+
-    '<h3>'+escape(b.name)+'</h3><strong>⚔️ '+last.powers[1]+'</strong></div></div>'+
-    '<div class="special-match-winner">🏅 VENCEU O DUELO: '+escape(last.fighters[last.winner].name)+'</div>'+
-    '<p class="sp-help">Próximo confronto automático em <b id="spClock">—</b> segundos.</p>'+leaveButton();
 }
 function renderState(data){
   state=data;pendingChoice=false;clockClear();screen();
   let html;
-  if(data.mode==='direct'){
-    html=data.phase==='draft'?directDraft(data):directBouts(data);
-  }else html=data.phase==='auction'?renderAuction(data):data.phase==='place'?renderPlace(data):renderReveal(data);
+  html=data.phase==='auction'?renderAuction(data):data.phase==='place'?renderPlace(data):renderReveal(data);
   root().innerHTML=html;
   if(data.phase==='auction'){
     if($('spBid')){
@@ -215,31 +186,7 @@ function renderState(data){
       root().querySelectorAll('[data-sp-slot]').forEach(x=>x.disabled=true);
     });
   }
-  if(data.mode==='direct'&&data.phase==='draft'&&data.turn===data.you)setupDirectSelector(data);
   startClock(data.deadline);attachLeave();
-}
-function setupDirectSelector(data){
-  const update=()=>{
-    const needle=String($('spDirectSearch')?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-    const available=(window.ANIME_ROSTER||[]).filter(p=>!data.used.includes(p.id)&&
-      (p.name+' '+p.anime).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(needle));
-    const select=$('spDirectSelect');select.innerHTML=available.map(p=>'<option value="'+escape(p.id)+'">'+escape(p.name)+' — '+escape(p.anime)+'</option>').join('');
-    select.disabled=!available.length;$('spDirectPick').disabled=!available.length;preview();
-  };
-  const preview=()=>{
-    const p=(window.ANIME_ROSTER||[]).find(c=>c.id===$('spDirectSelect')?.value);
-    $('spDirectPreview').innerHTML=p?'<div class="sp-direct-preview">'+portrait(p)+
-      '<div><strong>'+escape(p.name)+'</strong><small>'+escape(p.anime)+'</small>'+rarity(p)+'</div></div>':'';
-  };
-  $('spDirectSearch').oninput=update;
-  $('spDirectSelect').onchange=preview;
-  $('spDirectPick').onclick=()=>{
-    const id=$('spDirectSelect').value;
-    if(!id||pendingChoice)return;
-    pendingChoice=true;$('spDirectPick').disabled=true;
-    send('special_pick',{id});
-  };
-  update();
 }
 function resultRows(battle){
   if(battle.bouts){
@@ -255,8 +202,8 @@ function renderResult(data){
   state=data;clockClear();screen();
   const battle=data.battle,mode=data.mode;
   const winner=battle.winner;
-  const title=escape(battle.names[winner]||'Jogador')+' VENCEU!';
-  root().innerHTML=headline('🏆 '+title,'Partida concluída no servidor, com resultados iguais para todos os participantes.')+
+  const title=winner<0?'EMPATE!':escape(battle.names[winner]||'Jogador')+' VENCEU!';
+  root().innerHTML=headline('🏆 '+title,mode==='direct'?'5v5 concluído! A pontuação é a soma de TODOS os atributos dos cinco personagens. Cada jogador começou com 50 moedas.':'Partida concluída no servidor, com resultados iguais para todos os participantes.')+
     (data.stage!==undefined?'<p class="tournament-active">ETAPA '+(['QUARTAS DE FINAL','SEMIFINAL','FINAL'][data.stage]||'')+'</p>':'')+
     '<div class="sp-result-score">'+battle.names.map((name,i)=>'<div><small>'+escape(name)+'</small><b>⚡ '+(battle.totals?.[i]??battle.scores?.[i]??0)+'</b></div>').join('')+'</div>'+
     resultRows(battle)+bracketView(data.bracket)+
