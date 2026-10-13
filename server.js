@@ -17,7 +17,7 @@ const clients = new Set();
 const id = () => crypto.randomBytes(10).toString('hex');
 const publicFighter = c => ({id: c.id, name: c.name, anime: c.anime, emoji: c.emoji});
 // Os poderes aparecem apenas depois que o personagem é atribuído ao jogador.
-const acquiredFighter = c => ({...publicFighter(c), stats: c.stats, power: c.stats.reduce((sum, n) => sum + n, 0)});
+const acquiredFighter = c => ({...publicFighter(c), stats: c.stats, power: c.stats.reduce((sum, n) => sum + n, 0), rarity:c.rarity, rating:c.rating});
 
 function send(ws, data) {
   if (!ws || ws.closed) return;
@@ -42,6 +42,7 @@ function roomView(room, idx) {
     minimum:room.bidMode==='avoid'?room.currentBid-1:room.currentBid+1,
     bidMode:room.bidMode||'neutral',canAvoid:canBuy(room,0)&&canBuy(room,1),placer:room.placer,
     pending:room.pending?publicFighter(CHAR[room.pending]):null,
+    history:room.history||[],
     result:room.result||null
   };
 }
@@ -53,12 +54,14 @@ function chooseOffer(room){
   const used=new Set(room.teams.flat().filter(Boolean));
   const available=ROSTER.filter(x=>!used.has(x.id));
   if(!available.length){finishBattle(room);return;}
-  const random=arr=>arr[Math.floor(Math.random()*arr.length)];
-  let primary=random(available);
-  if(Math.random()<.27){
-    const weak=available.filter(x=>x.stats.reduce((a,b)=>a+b,0)<290);
-    if(weak.length)primary=random(weak);
-  }
+  // Sorteio por raridade: mistura personagens fracos, intermediários e raríssimos.
+  // Nada é revelado sobre a força ou raridade durante o leilão.
+  const weights=[['Comum',18],['Raro',30],['Épico',31],['Lendário',15],['Mítico',6]];
+  const choices=weights.map(([tier,weight])=>({tier,weight,pool:available.filter(x=>x.rarity===tier)})).filter(x=>x.pool.length);
+  const total=choices.reduce((sum,x)=>sum+x.weight,0);
+  let roll=Math.random()*total,chosen=choices[choices.length-1];
+  for(const tier of choices){roll-=tier.weight;if(roll<0){chosen=tier;break;}}
+  const primary=chosen.pool[Math.floor(Math.random()*chosen.pool.length)];
   room.offer=[primary.id];
   room.currentBid=0;room.bidMode=null;room.leader=-1;
   room.turn=canBuy(room,room.round%2)?room.round%2:1-room.round%2;
@@ -69,7 +72,7 @@ function chooseOffer(room){
 function makeRoom(p1,p2,mode){
   const room={id:id(),players:[p1,p2],mode,round:0,phase:'auction',budgets:[20,20],
     teams:[Array(5).fill(null),Array(5).fill(null)],offer:[],currentBid:0,bidMode:null,leader:-1,turn:0,deadline:0,
-    result:null,timer:null,botTimer:null,placer:-1,pending:null,pendingPrice:0,pendingAvoider:-1,pendingReason:''};
+    result:null,timer:null,botTimer:null,placer:-1,pending:null,pendingPrice:0,pendingAvoider:-1,pendingReason:'',history:[],rematchVotes:new Set()};
   rooms.set(room.id,room);p1.roomId=room.id;if(p2)p2.roomId=room.id;
   chooseOffer(room);syncRoom(room);presence();return room;
 }
@@ -147,6 +150,7 @@ function concludeAuction(room,reason){
 function placeCharacter(room,side,slot){
   if(room.phase!=='place'||side!==room.placer||!Number.isInteger(slot)||slot<0||slot>=5||room.teams[side][slot]!==null)return false;
   room.teams[side][slot]=room.pending;
+  room.history.push({round:room.round+1,character:publicFighter(CHAR[room.pending]),winner:side,price:room.pendingPrice,avoider:room.pendingAvoider,slot,rarity:CHAR[room.pending].rarity});
   room.phase='reveal';room.result={winner:side,price:room.pendingPrice,avoider:room.pendingAvoider,bidMode:room.bidMode||'neutral',reason:room.pendingReason,
     fighter:acquiredFighter(CHAR[room.pending]),slot};
   room.pending=null;room.placer=-1;syncRoom(room);
@@ -172,9 +176,19 @@ function finishBattle(room){
   const totals=[0,1].map(side=>room.teams[side].reduce((sum,c,i)=>sum+CHAR[c].stats[i],0));
   const winner=totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1;
   const payload={type:'battle',victoryRule:'total',names:[room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'],
-    scores,totals,winner,details,budgets:room.budgets,roomId:room.id,startAt:Date.now()+1400};
+    scores,totals,winner,details,budgets:room.budgets,history:room.history,roomId:room.id,startAt:Date.now()+1400};
   for(const u of room.players)issue(u,payload);
   room.battle=payload;presence();
+}
+function restartRoom(room){
+  clearTimeout(room.timer);clearTimeout(room.botTimer);
+  room.round=0;room.phase='auction';room.budgets=[20,20];
+  room.teams=[Array(5).fill(null),Array(5).fill(null)];
+  room.offer=[];room.leader=-1;room.turn=0;room.currentBid=0;room.bidMode=null;
+  room.deadline=0;room.placer=-1;room.pending=null;room.pendingPrice=0;
+  room.pendingAvoider=-1;room.pendingReason='';room.result=null;room.battle=null;
+  room.history=[];room.rematchVotes=new Set();
+  chooseOffer(room);syncRoom(room);
 }
 function cleanRoom(room) {
   if (!room) return;
@@ -254,6 +268,18 @@ function message(ws, data) {
     const room=rooms.get(user.roomId);
     const idx=room?.players.findIndex(p=>p?.token===user.token);
     if(!room||idx<0||!placeCharacter(room,idx,Number(data.slot)))return error(ws,'Escolha uma posição livre do seu time.');
+    return;
+  }
+  if(kind==='rematch'){
+    const room=rooms.get(user.roomId);
+    if(!room||room.phase!=='battle'||!room.battle)return error(ws,'A revanche só pode começar após a batalha.');
+    const side=room.players.findIndex(p=>p?.token===user.token);
+    if(side<0)return error(ws,'Você não faz parte dessa partida.');
+    if(!room.rematchVotes)room.rematchVotes=new Set();
+    room.rematchVotes.add(side);
+    const ready=room.mode==='bot'||(room.rematchVotes.has(0)&&room.rematchVotes.has(1));
+    if(ready){restartRoom(room);}
+    else for(const u of room.players)issue(u,{type:'rematch_status',voted:room.rematchVotes.size,needed:2});
     return;
   }
   if(kind==='leave'){
