@@ -9,16 +9,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=9.0">
-  <script src="./app.js?v=9.0" defer></script>
-  <script src="./characters-local.js?v=9.0" defer></script>
-  <script src="./offline.js?v=9.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=10.0">
+  <script src="./app.js?v=10.0" defer></script>
+  <script src="./characters-local.js?v=10.0" defer></script>
+  <script src="./offline.js?v=10.0" defer></script>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
   <header class="topbar container">
     <a class="brand" href="./index.html" aria-label="Anime Draft Battle, página inicial"><span class="brand-mark">A</span><span>ANIME<span class="lime">DRAFT</span><small>BATTLE ARENA</small></span></a>
-    <div class="top-right"><span class="online-chip"><span class="led" id="netLed"></span><span id="netLabel">Conectando...</span></span><span class="players-chip"><span class="live-dot"></span><strong id="playerCount">0</strong> ONLINE</span></div>
+    <div class="top-right"><button id="soundToggle" class="sound-switch" type="button" aria-pressed="true" title="Ativar ou desativar efeitos sonoros">🔊 SOM ON</button><span class="online-chip"><span class="led" id="netLed"></span><span id="netLabel">Conectando...</span></span><span class="players-chip"><span class="live-dot"></span><strong id="playerCount">0</strong> ONLINE</span></div>
   </header>
 
   <main class="container">
@@ -27,14 +27,14 @@
         <div class="eyebrow"><span class="star">✦</span> アニメ • A ARENA DEFINITIVA DE ANIME</div>
         <h1>O MELHOR <span>DRAFT</span><br>VENCE A <em>BATALHA.</em></h1><div class="anime-hero-caption">✦ SHONEN TOURNAMENT / バトル アリーナ ✦</div>
         <p>Serão 10 leilões com um personagem por vez. Escolha cada posição sem conhecer os poderes, desafie amigos e some os atributos para vencer.</p>
-        <div class="hero-pills"><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
+        <div class="hero-pills"><span>✨ 5 RARIDADES SECRETAS</span><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
       </div>
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-1"></div><div class="orbit orbit-2"></div><span class="crosshair">✛</span><div class="hero-card hero-card-left"><span>⚡</span><small>POWER</small><b>???</b></div><div class="hero-vs">VS</div><div class="hero-card hero-card-right"><span>🔥</span><small>SKILL</small><b>???</b></div><div class="orbit-label">ANIME DRAFT / RANKED ARENA</div></div>
     </section>
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 9.0 • FOTOS CENTRAIS</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 10.0 • RARIDADES + REVANCHE</span></div>
 
         <section id="lobby" class="screen panel-body">
           <div id="loginBox" class="login-grid">
@@ -93,10 +93,11 @@
           </div>
           <div id="reveal" class="reveal-box" hidden></div>
           <div class="my-team"><div class="section-eyebrow">// DRAFT DOS JOGADORES</div><div id="teamBoards" class="team-boards"></div></div>
+          <details class="auction-history"><summary>📜 HISTÓRICO DE LEILÕES <span id="auctionHistoryCount">0 / 10</span></summary><div id="auctionHistoryList" class="history-list"></div></details>
           <button id="leaveMatch" class="btn btn-link">← Sair da partida</button>
         </section>
 
-        <section id="battle" class="screen panel-body" hidden><div class="battle-banner"><span class="battle-kicker">A BATALHA FINAL COMEÇOU</span><div class="battle-glow">🏆</div><h2 id="winnerTitle">RESULTADO DA ARENA</h2><p id="winnerSubtitle">Calculando o vencedor...</p><div class="scoreboards"><div><small id="battleName0">JOGADOR 1</small><b id="battleScore0">0</b><span id="battleTotal0">0 pontos</span></div><div class="center-vs">VS</div><div><small id="battleName1">JOGADOR 2</small><b id="battleScore1">0</b><span id="battleTotal1">0 pontos</span></div></div></div><div class="battle-rows" id="battleRows"></div><div class="action-grid"><button class="btn btn-primary" id="goLobby">⚔ VOLTAR AO LOBBY</button><button class="btn btn-outline" id="copyBattle">📋 COPIAR RESULTADO</button></div></section>
+        <section id="battle" class="screen panel-body" hidden><div class="battle-banner"><span class="battle-kicker">A BATALHA FINAL COMEÇOU</span><div class="battle-glow">🏆</div><h2 id="winnerTitle">RESULTADO DA ARENA</h2><p id="winnerSubtitle">Calculando o vencedor...</p><div class="scoreboards"><div><small id="battleName0">JOGADOR 1</small><b id="battleScore0">0</b><span id="battleTotal0">0 pontos</span></div><div class="center-vs">VS</div><div><small id="battleName1">JOGADOR 2</small><b id="battleScore1">0</b><span id="battleTotal1">0 pontos</span></div></div></div><div class="battle-rows" id="battleRows"></div><div class="action-grid"><button class="btn btn-primary" id="battleRematch" type="button">🔄 REVANCHE</button><button class="btn btn-outline" id="goLobby">⚔ VOLTAR AO LOBBY</button><button class="btn btn-outline" id="copyBattle">📋 COPIAR RESULTADO</button></div><p id="rematchStatus" class="rematch-status" aria-live="polite">Uma nova partida pode começar com os mesmos jogadores.</p><details class="auction-history"><summary>📜 REVER OS 10 LEILÕES</summary><div id="battleHistory" class="history-list"></div></details></section>
       </div>
 
       <aside class="right-rail"><div class="rail-card"><div class="rail-title"><span class="mini-dot"></span> JOGADORES ONLINE</div><div id="onlineList" class="online-list"><span class="muted">Entre para ver quem está online.</span></div><p class="rail-foot">Convites funcionam quando os dois estão conectados ao mesmo site.</p></div><div class="rail-card rules-card"><div class="rail-title">⚡ COMO FUNCIONA</div><div class="rule"><b>01</b><div><strong>Escolha o adversário</strong><p>Envie o convite pelo apelido e espere ele aceitar.</p></div></div><div class="rule"><b>02</b><div><strong>Dispute os leilões</strong><p>Você começa com 20 moedas. Dispute um personagem por leilão. O rival tem 10 segundos para cobrir o lance, aumentando uma moeda.</p></div></div><div class="rule"><b>03</b><div><strong>Descubra os poderes</strong><p>Depois de vencer o leilão, escolha uma posição livre. Os poderes aparecem só após confirmar.</p></div></div><div class="rule"><b>04</b><div><strong>Enfrente o seu rival</strong><p>Ambos veem o resultado ao mesmo tempo. Quem somar mais pontos nos cinco atributos vence.</p></div></div></div><div class="credit-card">142 PERSONAGENS <span>✦</span> 38 ANIMES <span>✦</span> MUITAS SURPRESAS</div></aside>
