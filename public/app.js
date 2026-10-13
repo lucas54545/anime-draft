@@ -202,7 +202,39 @@ function respond(accept){
   const invitation=model.invitation;
   if(send('respond',{id:invitation.id,accept})){model.invitation=null;renderInvitations();}
 }
-function photoURL(id){return id==='satan'?'':typeof photoCache[id]==='string'?photoCache[id]:'';}
+function photoURL(id){
+  return window.ANIME_PORTRAITS?.[id]||
+    (typeof photoCache[id]==='string'&&/^https:\/\//i.test(photoCache[id])?photoCache[id]:'');
+}
+function characterAliases(person){
+  return [...new Set([person.name,...(NAME_ALIASES[person.id]||[]),
+    ...(window.ANIME_PORTRAIT_ALIASES?.[person.id]||[])])];
+}
+function imageProxy(id){
+  if(location.protocol==='file:'||/\.github\.io$/i.test(location.hostname))return '';
+  return '/api/portrait/'+encodeURIComponent(id)+'?v=1.0';
+}
+const unusableImages=new Set();
+window.animeImageFailed=function(img){
+  const id=img.dataset.character,proxy=img.dataset.proxy||'';
+  if(proxy&&img.getAttribute('src')!==proxy&&!img.dataset.triedProxy){
+    img.dataset.triedProxy='1';
+    img.src=proxy;
+    return;
+  }
+  img.onerror=null;img.src=img.dataset.fallback;
+  if(id&&!unusableImages.has(id)){
+    unusableImages.add(id);
+    // Uma foto que falhou no servidor ainda pode ser encontrada pela busca alternativa.
+    const person=(window.ANIME_ROSTER||model.roster||[]).find(x=>x.id===id);
+    if(person){
+      delete photoCache[id];
+      if(window.ANIME_PORTRAITS?.[id])delete window.ANIME_PORTRAITS[id];
+      pendingIDs.delete(id);
+      maybePhoto(person);
+    }
+  }
+};
 const placeholderCache={};
 function portraitFallback(person){
   if(placeholderCache[person.id])return placeholderCache[person.id];
@@ -214,11 +246,16 @@ function portraitFallback(person){
   return placeholderCache[person.id]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
 function imageMarkup(person,extraClass=''){
-  if(!person||!person.id)return '';
+  if(!person?.id)return '';
   const fallback=portraitFallback(person);
-  const real=person.id==='satan'?(location.protocol==='file:'?'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png':'/api/portrait/satan?v=9'):photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id)+'?v=9');
-  const url=real||fallback;
-  return '<img class="character-img '+safe(extraClass)+'" data-character="'+safe(person.id)+'" data-fallback="'+safe(fallback)+'" src="'+safe(url)+'" alt="Retrato de '+safe(person.name)+'" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=this.dataset.fallback">';
+  const proxy=imageProxy(person.id);
+  const known=photoURL(person.id);
+  // 1. Link catalogado e validado; 2. proxy de imagens do Render;
+  // 3. busca automática; 4. ilustração exclusiva de fallback.
+  const url=known||proxy||fallback;
+  return '<img class="character-img '+safe(extraClass)+'" data-character="'+safe(person.id)+
+    '" data-fallback="'+safe(fallback)+'" data-proxy="'+safe(proxy)+'" src="'+safe(url)+
+    '" alt="Retrato de '+safe(person.name)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="window.animeImageFailed(this)">';
 }
 // Matching images from Jikan's anime cast first, with a character search as fallback.
 // The queries are cached so the same photo doesn't require new requests every round.
@@ -269,7 +306,7 @@ function setImage(person,url){
   test.onerror=()=>{};test.referrerPolicy='no-referrer';test.src=url;
 }
 function matchImage(p,items){
-  const acceptable=new Set([p.name,...(NAME_ALIASES[p.id]||[])].map(normName));
+  const acceptable=new Set(characterAliases(p).map(normName));
   const matches=name=>{
     const norm=normName(name);
     const reversed=normName(String(name||'').split(',').reverse().join(' '));
@@ -293,7 +330,7 @@ async function fetchAnimeCast(anime){
     const items=(body.data||[]).map(x=>x.character).filter(Boolean);
     const roster=window.ANIME_ROSTER||model.roster||[];
     for(const p of roster.filter(x=>x.anime===anime))matchImage(p,items);
-  }).catch(()=>{});
+  }).catch(()=>{castJobs.delete(anime);});
   castJobs.set(anime,job);return job;
 }
 function maybePhoto(person){
@@ -310,7 +347,7 @@ async function drainPhotos(){
       await fetchAnimeCast(p.anime);
       // 2. Procura nomes alternativos no MyAnimeList.
       if(!photoURL(p.id)){
-        for(const name of [p.name,...(NAME_ALIASES[p.id]||[])].slice(0,3)){
+        for(const name of characterAliases(p).slice(0,4)){
           const body=await fetchJSON('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(name)+'&limit=15');
           matchImage(p,body.data||[]);
           if(photoURL(p.id))break;
@@ -319,10 +356,10 @@ async function drainPhotos(){
       // 3. AniList como fonte extra se MyAnimeList não localizou retrato.
       if(!photoURL(p.id)){
         const query='query($search:String){Character(search:$search){name{full}image{large}}}';
-        for(const name of [p.name,...(NAME_ALIASES[p.id]||[])].slice(0,2)){
+        for(const name of characterAliases(p).slice(0,3)){
           const body=await fetchJSON('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,variables:{search:name}})});
           const c=body.data?.Character;
-          if(c&&new Set([p.name,...(NAME_ALIASES[p.id]||[])].map(normName)).has(normName(c.name?.full))){
+          if(c&&new Set(characterAliases(p).map(normName)).has(normName(c.name?.full))){
             setImage(p,c.image?.large);
             break;
           }
@@ -334,6 +371,17 @@ async function drainPhotos(){
   }
   photoBusy=false;
 }
+// Quando o catálogo recebe mais fotos, atualiza os cards já exibidos na tela.
+window.addEventListener('anime-portraits-updated',()=>{
+  document.querySelectorAll('img[data-character]').forEach(img=>{
+    const id=img.dataset.character,link=window.ANIME_PORTRAITS?.[id];
+    if(link&&img.getAttribute('src')!==link){
+      img.dataset.triedProxy='';
+      img.onerror=function(){window.animeImageFailed(this);};
+      img.src=link;
+    }
+  });
+});
 // Fotos compartilhadas com os modos locais, sem duplicar consultas externas.
 window.imageMarkup=imageMarkup;
 window.maybePhoto=maybePhoto;
