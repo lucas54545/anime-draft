@@ -16,7 +16,7 @@ function historyPanel(){
   const records=st.history||[];
   const rows=records.length?records.map(h=>{
     const price=h.price<0?'🕳️ '+Math.abs(h.price)+' no limbo':h.price>0?'🪙 '+h.price:'Sem custo';
-    return '<div class="history-entry"><span class="history-round">#'+String(h.round).padStart(2,'0')+'</span><div class="history-info"><b>'+esc(h.character.name)+'</b><small>'+esc(st.names[h.winner])+' · '+ATTR[h.slot]+'</small></div>'+rarityTag(h)+'<span class="history-price">'+price+'</span></div>';
+    return '<div class="history-entry"><span class="history-round">#'+String(h.round).padStart(2,'0')+'</span><div class="history-info"><b>'+esc(h.character.name)+'</b><small>'+esc(st.names[h.winner])+' · '+(st.mode==='direct5v5'?'PERSONAGEM '+(h.slot+1):ATTR[h.slot])+'</small></div>'+rarityTag(h)+'<span class="history-price">'+price+'</span></div>';
   }).join(''):'<p class="muted">Nenhum leilão concluído.</p>';
   return '<details class="auction-history"><summary>📜 HISTÓRICO DE LEILÕES · '+records.length+' / 10</summary><div class="history-list">'+rows+'</div></details>';
 }
@@ -64,14 +64,16 @@ function stats(p){
   return rarityTag(p)+'<div class="local-power"><div class="local-power-total">⚡ PODER TOTAL <b>'+sum(p)+'</b></div><div class="local-stats">'+ATTR.map((label,i)=>'<span>'+esc(label)+' <strong>'+p.stats[i]+'</strong></span>').join('')+'</div></div>';
 }
 function slots(n){
-  const t=st.teams[n],score=t.reduce((a,p,i)=>a+(p?.stats?.[i]||0),0);
+  const direct=st.mode==='direct5v5';
+  const t=st.teams[n],score=t.reduce((a,p,i)=>a+(p?.stats?.reduce((sum,n)=>sum+n,0)||0),0);
   return '<div class="offline-team compact-team"><div class="offline-team-head"><b>'+esc(st.names[n])+' · ⚡ '+score+'</b><span>🪙 '+st.budgets[n]+'</span></div>'+
-    ATTR.map((label,i)=>{
+    ATTR.map((attribute,i)=>{
+      const label=direct?'⚔️ PERSONAGEM '+(i+1):attribute;
       const p=t[i];
       return '<div class="offline-slot compact-slot">'+
         '<div class="offline-slot-ico">'+(p?portrait(p):'❔')+'</div>'+
         '<div class="compact-slot-info"><small>'+label+'</small><strong>'+(p?esc(p.name):'Posição livre')+'</strong></div>'+
-        '<b class="slot-score">'+(p?p.stats[i]:'—')+'</b></div>';
+        '<b class="slot-score">'+(p?(direct?p.stats.reduce((a,b)=>a+b,0):p.stats[i]):'—')+'</b></div>';
     }).join('')+'</div>';
 }
 function teams(){return '<div class="offline-teams">'+slots(0)+slots(1)+'</div>';}
@@ -275,7 +277,7 @@ function choose(){
     '<div class="offline-winner"><span>🏆 VENCEDOR DO LEILÃO</span><h3>'+esc(st.names[n])+'</h3><p>Levou '+esc(p.name)+'. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Preço 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="auction-pair single-auction">'+card(p)+'</div>'+
     '<div class="placement-area"><span class="section-eyebrow">🎯 DEFINA SUA ESTRATÉGIA</span><h3>ESCOLHA UMA POSIÇÃO LIVRE</h3>'+
-    '<div class="placement-options">'+ATTR.map((label,i)=>'<button class="position-btn" data-slot="'+i+'" '+(st.teams[n][i]?'disabled':'')+'><span>'+label+'</span><b>'+(st.teams[n][i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('')+'</div></div>'+
+    '<div class="placement-options">'+ATTR.map((label,i)=>'<button class="position-btn" data-slot="'+i+'" '+(st.teams[n][i]?'disabled':'')+'><span>'+(st.mode==='direct5v5'?'⚔️ PERSONAGEM '+(i+1):label)+'</span><b>'+(st.teams[n][i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('')+'</div></div>'+
     '<div class="offline-subtitle">⚔️ TIMES</div>'+teams();
   root().querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>chooseSlot(Number(b.dataset.slot)));
 }
@@ -285,7 +287,7 @@ function chooseSlot(slot){
   const p=st.current;sound('place');if(p.rarity==='Mítico')sound('victory');
   st.history.push({round:st.round+1,character:{id:p.id,name:p.name},winner:st.winner,price:st.price,slot,rarity:p.rarity,rating:p.rating});
   root().innerHTML=heading('PODER REVELADO!','O personagem entrou na posição escolhida. Agora os números aparecem.')+
-    '<div class="offline-winner"><span>🎯 POSIÇÃO ESCOLHIDA: '+ATTR[slot]+'</span><h3>'+esc(p.name)+'</h3><p>'+esc(st.names[st.winner])+' colocou o personagem. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Pagou 🪙 '+st.price+'.')+'</p></div>'+
+    '<div class="offline-winner"><span>🎯 POSIÇÃO ESCOLHIDA: '+(st.mode==='direct5v5'?'PERSONAGEM '+(slot+1):ATTR[slot])+'</span><h3>'+esc(p.name)+'</h3><p>'+esc(st.names[st.winner])+' colocou o personagem. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Pagou 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="offline-revealpair one-reveal"><div class="offline-revealcard">'+portrait(p)+'<h4>'+esc(p.name)+'</h4>'+stats(p)+'</div></div>'+
     '<div class="offline-subtitle">⚔️ TIMES COMPLETADOS</div>'+teams()+historyPanel()+
     '<div class="offline-actions">'+btn(st.round===9?'⚔️ VER BATALHA FINAL':'PRÓXIMO LEILÃO →','localNext')+'</div>';
