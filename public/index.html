@@ -35,10 +35,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=10.0">
-  <script src="./app.js?v=10.0" defer></script>
-  <script src="./characters-local.js?v=10.0" defer></script>
-  <script src="./offline.js?v=10.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=11.0">
+  <script src="./app.js?v=11.0" defer></script>
+  <script src="./characters-local.js?v=11.0" defer></script>
+  <script src="./offline.js?v=11.0" defer></script>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -53,14 +53,14 @@
         <div class="eyebrow"><span class="star">✦</span> アニメ • A ARENA DEFINITIVA DE ANIME</div>
         <h1>O MELHOR <span>DRAFT</span><br>VENCE A <em>BATALHA.</em></h1><div class="anime-hero-caption">✦ SHONEN TOURNAMENT / バトル アリーナ ✦</div>
         <p>Serão 10 leilões com um personagem por vez. Escolha cada posição sem conhecer os poderes, desafie amigos e some os atributos para vencer.</p>
-        <div class="hero-pills"><span>✨ 5 RARIDADES SECRETAS</span><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
+        <div class="hero-pills"><span>👥 NOVO: 2v2 EM DUPLAS</span><span>✨ 5 RARIDADES SECRETAS</span><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
       </div>
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-1"></div><div class="orbit orbit-2"></div><span class="crosshair">✛</span><div class="hero-card hero-card-left"><span>⚡</span><small>POWER</small><b>???</b></div><div class="hero-vs">VS</div><div class="hero-card hero-card-right"><span>🔥</span><small>SKILL</small><b>???</b></div><div class="orbit-label">ANIME DRAFT / RANKED ARENA</div></div>
     </section>
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 10.0 • RARIDADES + REVANCHE</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 11.0 • NOVO 2v2</span></div>
 
         <section id="lobby" class="screen panel-body">
           <div id="loginBox" class="login-grid">
@@ -82,11 +82,38 @@
             <div id="inviteInbox" class="invite-inbox" hidden><div class="invite-icon">⚔</div><div class="invite-copy"><b id="inviteFrom">Um amigo desafiou você!</b><small>Quer entrar na mesma batalha ao vivo?</small></div><div class="invite-actions"><button class="btn btn-primary" id="acceptBtn">ACEITAR</button><button class="btn btn-outline" id="declineBtn">RECUSAR</button></div></div>
             <div class="divider-label">OU TREINE</div>
             <button id="botBtn" class="btn btn-outline full">🤖 TREINAR CONTRA O BOT <span>→</span></button>
+            <div class="duo-start-section">
+              <div class="divider-label">OU JOGUE EM DUPLA</div>
+              <div class="duo-feature-title">⚔️ MODO 2v2 ONLINE <span>4 JOGADORES</span></div>
+              <p>Crie uma sala, passe o código para três amigos e escolha as duplas. Cada equipe divide 20 moedas e monta um time de 5 personagens.</p>
+              <button id="squadCreateBtn" class="btn btn-primary full" type="button">➕ CRIAR SALA 2v2</button>
+              <div class="duo-join-fields">
+                <input id="squadCodeInput" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="CÓDIGO DE 6 LETRAS" aria-label="Código da sala 2v2">
+                <select id="squadSide" aria-label="Escolha sua dupla">
+                  <option value="0">DUPLA A</option>
+                  <option value="1" selected>DUPLA B</option>
+                </select>
+                <button id="squadJoinBtn" class="btn btn-outline" type="button">ENTRAR 2v2 →</button>
+              </div>
+              <p class="small-note">O criador fica na dupla A. Os outros escolhem entre A e B, com duas pessoas por equipe.</p>
+            </div>
+
+          </div>
+          <div id="squadWaiting" class="squad-waiting" hidden>
+            <div class="squad-waiting-label">⚔️ AGUARDANDO AS DUAS DUPLAS</div>
+            <h3>2v2 — SALA <span id="squadCodeLabel">------</span></h3>
+            <p>Envie este código aos seus amigos. A partida começa automaticamente quando as quatro vagas forem preenchidas.</p>
+            <div class="squad-waiting-actions"><button id="squadCopyBtn" class="btn btn-primary" type="button">📋 COPIAR CÓDIGO</button><button id="squadLeaveBtn" class="btn btn-outline" type="button">← SAIR DA SALA</button></div>
+            <div class="squad-lobby-columns">
+              <div><h4>🔷 DUPLA A <small id="squadACount">0/2</small></h4><div id="squadTeamA" class="squad-members"></div></div>
+              <div><h4>🔶 DUPLA B <small id="squadBCount">0/2</small></h4><div id="squadTeamB" class="squad-members"></div></div>
+            </div>
+            <div class="squad-status" id="squadWaitingStatus">Aguardando jogadores (1 de 4)...</div>
           </div>
           <div class="local-start" id="localStart">
             <div class="local-label">⚡ JOGUE AGORA, SEM INSTALAR SERVIDOR</div>
             <p>Teste o leilão contra o computador ou com um amigo no mesmo aparelho. Para jogar em celulares diferentes, publique a versão com servidor.</p>
-            <div class="action-grid"><button id="localBotBtn" class="btn btn-primary" type="button">🤖 JOGAR CONTRA BOT</button><button id="localDuelBtn" class="btn btn-outline" type="button">👥 2 JOGADORES LOCAIS</button></div>
+            <div class="action-grid"><button id="localBotBtn" class="btn btn-primary" type="button">🤖 JOGAR CONTRA BOT</button><button id="localDuelBtn" class="btn btn-outline" type="button">👥 2 JOGADORES LOCAIS</button><button id="localSquadBtn" class="btn btn-outline" type="button">⚔️ 2v2 LOCAL (4 PESSOAS)</button></div>
           </div>
         </section>
 
