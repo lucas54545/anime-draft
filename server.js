@@ -9,6 +9,8 @@ const {createSpecialMultiplayer} = require('./special-server');
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = path.join(__dirname, 'public');
 const ROSTER = require('./characters.json');
+const PORTRAIT_CONFIG=require('./portrait-config.json');
+const PORTRAIT_INDEX=require('./public/portrait-map.json').images||{};
 const CHAR = Object.fromEntries(ROSTER.map(c => [c.id, c]));
 const ATTRS = ['Força', 'Resistência', 'QI', 'Habilidade', 'Velocidade'];
 const users = new Map();    // token -> {token,name,conn,roomId}
@@ -439,6 +441,8 @@ async function castPortrait(person,aliases){
     castPortraitCache.set(malId,job);
   }
   const chars=await job;
+  // Falhas temporárias (429 / 5xx) não ficam presas no cache durante toda a partida.
+  if(!chars.length)castPortraitCache.delete(malId);
   const wordsList=aliases.map(pictureWords).filter(words=>words.length);
   for(const item of chars){
     const c=item.character||item,regular=pictureWords(c.name);
@@ -467,7 +471,7 @@ async function searchPortrait(person){
     // Foto oficial do personagem; usada somente se a API de personagens falhar.
     if(person.id==='satan')return 'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png';
   }
-  const names=[person.name,...(PICTURE_ALIASES[person.id]||[])];
+  const names=[...new Set([person.name,...(PICTURE_ALIASES[person.id]||[]),...(PORTRAIT_CONFIG.aliases[person.id]||[])])];
   try{const cast=await castPortrait(person,names);if(cast)return cast;}catch(e){console.log('Retrato no elenco:',e.message);}
   for(const name of [...new Set(names)]){
     try{
@@ -499,25 +503,35 @@ async function searchPortrait(person){
   }
   return null;
 }
-async function portraitBytes(character){
-  const url=await searchPortrait(character);
+async function loadPortraitURL(url){
   if(!url||!/^https:\/\//.test(url))return null;
   try{
     const response=await pacedPhotoRequest(url);
     if(!response.ok)return null;
-    const mime=response.headers.get('content-type')||'';
-    if(!mime.startsWith('image/'))return null;
+    const mime=(response.headers.get('content-type')||'').split(';')[0].trim();
+    if(!['image/jpeg','image/png','image/webp','image/gif'].includes(mime))return null;
     const buffer=Buffer.from(await response.arrayBuffer());
-    if(buffer.length>2500000||!buffer.length)return null;
+    if(buffer.length>2500000||buffer.length<100)return null;
     return {buffer,mime};
-  }catch(e){console.log('Photo load:',e.message);return null;}
+  }catch(e){console.log('Foto externa:',e.message);return null;}
+}
+async function portraitBytes(character){
+  // O catálogo V1 evita consultas repetidas e resolve os nomes antes da partida.
+  const curated=PORTRAIT_INDEX[character.id];
+  if(curated){
+    const fromIndex=await loadPortraitURL(curated);
+    if(fromIndex)return fromIndex;
+  }
+  const discovered=await searchPortrait(character);
+  if(discovered&&discovered!==curated)return loadPortraitURL(discovered);
+  return null;
 }
 function servePortrait(req,res,person){
   if(!person){res.writeHead(404);res.end();return;}
   const cached=portraitCache.get(person.id);
-  if(cached&&Date.now()-cached.time<(cached.data?3600000:60000)){
+  if(cached&&Date.now()-cached.time<(cached.data?3600000:20000)){
     if(cached.data){res.writeHead(200,{'Content-Type':cached.data.mime,'Cache-Control':'public,max-age=86400'});res.end(cached.data.buffer);}
-    else{res.writeHead(404,{'Cache-Control':'public,max-age=90'});res.end();}
+    else{res.writeHead(404,{'Cache-Control':'no-store'});res.end();}
     return;
   }
   let work=portraitPending.get(person.id);
@@ -525,7 +539,7 @@ function servePortrait(req,res,person){
   work.then(data=>{
     if(res.destroyed)return;
     if(data){res.writeHead(200,{'Content-Type':data.mime,'Cache-Control':'public,max-age=86400'});res.end(data.buffer);}
-    else{res.writeHead(404,{'Cache-Control':'public,max-age=90'});res.end();}
+    else{res.writeHead(404,{'Cache-Control':'no-store'});res.end();}
   }).catch(()=>{if(!res.destroyed){res.writeHead(502);res.end();}});
 }
 
