@@ -534,3 +534,109 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
   .battle-row-v9 .versus-text strong,.offline-fight-v9 .versus-text strong{font-size:17px}
   .battle-row-v9 .mid-vs-wrap>span,.offline-fight-v9 .mid-vs-wrap>span{font-size:14px}
 }
+
+/* V10 — card raridade revelada, histórico e efeitos de Shonen Arena */
+.sound-switch{
+  border:1px solid #cb84df70;background:linear-gradient(105deg,#3a224e,#1b2341);
+  color:#f4caff;padding:8px 11px;border-radius:10px;
+  font-size:10px;font-weight:900;letter-spacing:.4px;white-space:nowrap;cursor:pointer;
+}
+.sound-switch:hover{border-color:#ffafd9;box-shadow:0 0 14px #b467ff45}
+.rarity-chip{
+  display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
+  max-width:100%;padding:3px 9px;border-radius:8px;border:1px solid transparent;
+  font-size:10px;font-weight:900;line-height:1.35;white-space:nowrap;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+.rarity-common{color:#dde0e9;background:#4d54612f;border-color:#9ca5b550}
+.rarity-rare{color:#73d9ff;background:#25bffc24;border-color:#6bd7f66b}
+.rarity-epic{color:#e4a7ff;background:#9757e52f;border-color:#c68cff82}
+.rarity-legendary{color:#ffcf72;background:#db903029;border-color:#ffcf7290}
+.rarity-mythic{
+  color:#fff5ff;background:linear-gradient(110deg,#fc5eae85,#9050f591,#42d8ef67,#fc5eae85);
+  background-size:260% 100%;border-color:#ffb0ec;
+  box-shadow:0 0 17px #e985ed5e;
+  animation:mythic-shine 2.7s linear infinite;
+}
+@keyframes mythic-shine{to{background-position:-260% 0}}
+#reveal>.rarity-chip,#reveal .rarity-chip,.offline-revealcard>.rarity-chip{margin:6px 0;justify-content:center}
+.history-entry>.rarity-chip{font-size:9px;padding:3px 5px}
+.auction-history{
+  margin-top:10px;padding:0 9px;border-radius:11px;
+  border:1px solid #8053b05d;
+  background:linear-gradient(120deg,#1c1531,#10182a);
+}
+.auction-history summary{
+  list-style-position:inside;cursor:pointer;
+  font-size:11px;font-weight:900;letter-spacing:.5px;
+  color:#edcafa;padding:11px 7px;
+}
+.auction-history summary span{float:right;font-size:10px;color:#a8baf9}
+.auction-history[open] summary{border-bottom:1px solid #77529c5d}
+.history-list{max-height:240px;overflow-y:auto;padding:7px 0 9px}
+.history-entry{
+  display:flex;align-items:center;gap:8px;min-width:0;
+  padding:7px;border-bottom:1px solid #8665a73d;
+}
+.history-entry:last-child{border-bottom:0}
+.history-round{
+  color:#fbb0ed;font:900 16px/1 'Barlow Condensed',Impact,sans-serif;
+}
+.history-info{flex:1;min-width:0}
+.history-info b{
+  display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.history-info small{display:block;color:#aaa4c5;font-size:9px;margin-top:2px}
+.history-price{color:#ffd4a1;white-space:nowrap;font-size:10px;font-weight:800}
+.rematch-status{text-align:center;color:#b8a9d2;margin:5px 0 0;font-size:10px;font-weight:700}
+#battle .action-grid .btn{font-size:11px}
+#battle .battle-banner,#offline .offline-final{position:relative;isolation:isolate;overflow:hidden}
+#battle .battle-banner::before,#offline .offline-final::before{
+  content:'✦';position:absolute;top:12px;left:11%;
+  color:#ff97dc;font-size:35px;opacity:0;
+  text-shadow:0 0 22px #fe5dcc;
+  animation:arena-spark .9s .1s ease-out both;pointer-events:none;z-index:-1;
+}
+#battle .battle-banner::after,#offline .offline-final::after{
+  content:'✦';position:absolute;top:20%;right:11%;font-size:30px;color:#90f4fb;
+  opacity:0;text-shadow:0 0 20px #4ee2f5;
+  animation:arena-spark 1s .24s ease-out both;pointer-events:none;z-index:-1;
+}
+#battle .battle-row.battle-row-v9,
+#offline .offline-compact-fights .offline-fight.offline-fight-v9{
+  animation:arena-impact .35s both!important;
+  animation-delay:var(--battle-delay,0ms)!important;
+  will-change:transform,opacity;
+}
+#battle .battle-row.battle-row-v9 .mid-photo.win,
+#offline .offline-fight-v9 .mid-photo.win{
+  animation:winner-glow 1.4s ease-in-out 2;
+}
+@keyframes arena-impact{
+  from{opacity:0;transform:translateY(12px) scale(.97);filter:brightness(1.6)}
+  to{opacity:1;transform:translateY(0) scale(1);filter:brightness(1)}
+}
+@keyframes arena-spark{
+  0%{transform:translateY(14px) rotate(-60deg) scale(.1);opacity:0}
+  45%{opacity:1}
+  100%{transform:translateY(-12px) rotate(65deg) scale(1);opacity:.45}
+}
+@keyframes winner-glow{
+  0%,100%{box-shadow:0 0 5px #ff8ee580}
+  50%{box-shadow:0 0 19px #f68bdded}
+}
+@media(max-width:570px){
+ .sound-switch{font-size:9px;padding:6px 7px}
+ .history-entry{gap:5px;padding:5px 3px}
+ .history-price{font-size:9px}
+ .history-entry>.rarity-chip{font-size:8px;padding:3px 4px}
+ #battle .action-grid .btn{font-size:9px;padding:8px 6px}
+}
+@media(prefers-reduced-motion:reduce){
+ .rarity-mythic,#battle .battle-row.battle-row-v9,
+ #offline .offline-compact-fights .offline-fight.offline-fight-v9,
+ #battle .battle-banner::before,#battle .battle-banner::after,
+ #offline .offline-final::before,#offline .offline-final::after{
+  animation:none!important;
+ }
+}
