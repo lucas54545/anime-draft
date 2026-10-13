@@ -39,7 +39,8 @@ function roomView(room, idx) {
     teams:room.teams.map(t=>t.map(c=>c?acquiredFighter(CHAR[c]):null)),
     offered:room.offer.map(c=>publicFighter(CHAR[c])),
     currentBid:room.currentBid,leader:room.leader,turn:room.turn,deadline:room.deadline,
-    minimum:room.currentBid+1,placer:room.placer,
+    minimum:room.bidMode==='avoid'?room.currentBid-1:room.currentBid+1,
+    bidMode:room.bidMode||'neutral',canAvoid:canBuy(room,0)&&canBuy(room,1),placer:room.placer,
     pending:room.pending?publicFighter(CHAR[room.pending]):null,
     result:room.result||null
   };
@@ -59,7 +60,7 @@ function chooseOffer(room){
     if(weak.length)primary=random(weak);
   }
   room.offer=[primary.id];
-  room.currentBid=0;room.leader=-1;
+  room.currentBid=0;room.bidMode=null;room.leader=-1;
   room.turn=canBuy(room,room.round%2)?room.round%2:1-room.round%2;
   room.deadline=Date.now()+10000;
   room.phase='auction';room.result=null;room.pending=null;room.placer=-1;
@@ -67,8 +68,8 @@ function chooseOffer(room){
 }
 function makeRoom(p1,p2,mode){
   const room={id:id(),players:[p1,p2],mode,round:0,phase:'auction',budgets:[20,20],
-    teams:[Array(5).fill(null),Array(5).fill(null)],offer:[],currentBid:0,leader:-1,turn:0,deadline:0,
-    result:null,timer:null,botTimer:null,placer:-1,pending:null,pendingPrice:0,pendingReason:''};
+    teams:[Array(5).fill(null),Array(5).fill(null)],offer:[],currentBid:0,bidMode:null,leader:-1,turn:0,deadline:0,
+    result:null,timer:null,botTimer:null,placer:-1,pending:null,pendingPrice:0,pendingAvoider:-1,pendingReason:''};
   rooms.set(room.id,room);p1.roomId=room.id;if(p2)p2.roomId=room.id;
   chooseOffer(room);syncRoom(room);presence();return room;
 }
@@ -84,43 +85,54 @@ function scheduleTurn(room){
     room.botTimer=setTimeout(()=>{
       if(!rooms.has(room.id)||room.phase!=='auction'||room.turn!==1)return;
       const desired=1+Math.floor(Math.random()*6);
-      if(room.currentBid+1<=room.budgets[1]&&room.currentBid+1<=desired&&Math.random()<.80)raiseBid(room,1,room.currentBid+1);
-      else concludeAuction(room,'bot desistiu');
+      const next=room.bidMode==='avoid'?room.currentBid-1:room.currentBid+1;
+      const firstAvoid=room.bidMode===null&&canBuy(room,0)&&Math.random()<.23;
+      if(firstAvoid&&room.budgets[1]>=1)raiseBid(room,1,-1);
+      else if(room.bidMode==='avoid'&&-next<=room.budgets[1]&&-next<=desired&&Math.random()<.65)raiseBid(room,1,next);
+      else if(room.bidMode!=='avoid'&&next<=room.budgets[1]&&next<=desired&&Math.random()<.78)raiseBid(room,1,next);
+      else concludeAuction(room,'bot aceitou o lance');
     },650+Math.floor(Math.random()*1400));
   }
 }
 function raiseBid(room,side,amount){
-  if(room.phase!=='auction'||room.turn!==side||!canBuy(room,side))return false;
-  const needed=room.currentBid+1;
-  if(!Number.isInteger(amount)||amount!==needed||needed>room.budgets[side]||Date.now()>room.deadline)return false;
+  if(room.phase!=='auction'||room.turn!==side||!canBuy(room,side)||Date.now()>room.deadline)return false;
+  if(!Number.isInteger(amount)||amount===0||Math.abs(amount)>room.budgets[side])return false;
+  if(room.bidMode===null){
+    if(amount!==1&&amount!==-1)return false;
+    if(amount<0&&(!canBuy(room,0)||!canBuy(room,1)))return false;
+    room.bidMode=amount<0?'avoid':'buy';
+  }else if(amount!==room.currentBid+(room.bidMode==='avoid'?-1:1))return false;
   room.currentBid=amount;room.leader=side;room.turn=1-side;room.deadline=Date.now()+10000;
-  if(!canBuy(room,room.turn)||room.budgets[room.turn]<room.currentBid+1){concludeAuction(room,'adversário não pode cobrir');return true;}
+  if(!canBuy(room,room.turn)||room.budgets[room.turn]<Math.abs(room.currentBid)+1){
+    concludeAuction(room,'adversário não pode cobrir');return true;
+  }
   scheduleTurn(room);syncRoom(room);return true;
 }
 function concludeAuction(room,reason){
   if(room.phase!=='auction')return;
   clearTimeout(room.timer);clearTimeout(room.botTimer);
-  let winner;
-  if(room.leader>=0)winner=room.leader;
-  else if(!canBuy(room,room.turn))winner=1-room.turn;
-  else if(reason==='jogador desistiu'||reason==='bot desistiu')winner=canBuy(room,1-room.turn)?1-room.turn:room.turn;
-  else winner=room.turn;
+  let winner,avoider=-1,price=0;
+  if(room.bidMode==='avoid'&&room.leader>=0){
+    avoider=room.leader;winner=1-avoider;price=room.currentBid;
+    room.budgets[avoider]+=price; // moedas negativas desaparecem do jogo
+  }else if(room.bidMode==='buy'&&room.leader>=0){
+    winner=room.leader;price=room.currentBid;room.budgets[winner]-=price;
+  }else winner=room.turn;
   if(!canBuy(room,winner))winner=1-winner;
   room.phase='place';room.deadline=0;room.placer=winner;
-  room.pending=room.offer[0];room.pendingPrice=room.leader<0?0:room.currentBid;room.pendingReason=reason;
-  room.budgets[winner]-=room.pendingPrice;syncRoom(room);
+  room.pending=room.offer[0];room.pendingPrice=price;room.pendingAvoider=avoider;room.pendingReason=reason;
+  syncRoom(room);
   if(room.mode==='bot'&&winner===1){
     room.botTimer=setTimeout(()=>{
       if(!rooms.has(room.id)||room.phase!=='place'||room.placer!==1)return;
-      const slots=freeSlots(room,1);
-      if(slots.length)placeCharacter(room,1,slots[Math.floor(Math.random()*slots.length)]);
+      const slots=freeSlots(room,1);if(slots.length)placeCharacter(room,1,slots[Math.floor(Math.random()*slots.length)]);
     },900);
   }
 }
 function placeCharacter(room,side,slot){
   if(room.phase!=='place'||side!==room.placer||!Number.isInteger(slot)||slot<0||slot>=5||room.teams[side][slot]!==null)return false;
   room.teams[side][slot]=room.pending;
-  room.phase='reveal';room.result={winner:side,price:room.pendingPrice,reason:room.pendingReason,
+  room.phase='reveal';room.result={winner:side,price:room.pendingPrice,avoider:room.pendingAvoider,bidMode:room.bidMode||'neutral',reason:room.pendingReason,
     fighter:acquiredFighter(CHAR[room.pending]),slot};
   room.pending=null;room.placer=-1;syncRoom(room);
   room.timer=setTimeout(()=>{
@@ -210,7 +222,7 @@ function message(ws, data) {
     if(idx<0||idx!==room.turn)return error(ws,'Espere a sua vez de dar o lance.');
     if(Date.now()>room.deadline){concludeAuction(room,'tempo esgotado');return error(ws,'Os 10 segundos acabaram.');}
     const amount=Number(data.amount);
-    if(!raiseBid(room,idx,amount))return error(ws,'Lance inválido. A próxima oferta é '+(room.currentBid+1)+' moeda(s).');
+    if(!raiseBid(room,idx,amount))return error(ws,'Lance inválido. Confira a modalidade e seu saldo.');
     return;
   }
   if(kind==='pass'){
@@ -218,7 +230,8 @@ function message(ws, data) {
     if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
     const idx=room.players.findIndex(p=>p?.token===user.token);
     if(idx!==room.turn)return error(ws,'Ainda não é sua vez.');
-    concludeAuction(room,'jogador desistiu');return;
+    if(Date.now()>room.deadline){concludeAuction(room,'tempo esgotado');return;}
+    concludeAuction(room,room.bidMode===null?'personagem aceito gratuitamente':'jogador encerrou lance');return;
   }
   if(kind==='place'){
     const room=rooms.get(user.roomId);
