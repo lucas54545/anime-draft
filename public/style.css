@@ -884,3 +884,133 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
 .arena-connection-notice strong{display:block;font-size:12px;color:#bcecff;letter-spacing:.5px}
 .arena-connection-notice p{color:#d0d7e6;font-size:11px;line-height:1.55;margin:5px 0 0}
 #loginBtn:disabled{opacity:.7}
+
+/* V13 — multiplayer dos 5 modos adicionais (código compartilhável, quartos, lutas) */
+.extra-mode-choice{display:flex;flex-direction:column;gap:0;min-width:0}
+.extra-mode-choice>.extra-mode-card{flex:1;border-bottom-left-radius:0;border-bottom-right-radius:0;min-height:112px}
+.online-extra-btn{
+  width:100%;border:1px solid #7ce1ff9a;border-top:0;border-radius:0 0 11px 11px;
+  background:linear-gradient(110deg,#185176,#2a3971);
+  color:#e5faff;padding:10px 7px;font-size:10px;font-weight:900;letter-spacing:.4px;
+  text-align:center;cursor:pointer;
+}
+.online-extra-btn:hover,.online-extra-btn:focus-visible{background:linear-gradient(120deg,#236a98,#563d91);box-shadow:0 0 15px #6cdef352}
+.special-online-access{margin-top:16px;background:#111e35bd;border:1px solid #65bde49c;padding:14px;border-radius:12px}
+.special-online-access h4{margin:0 0 5px;color:#a2eaff;font-size:12px;letter-spacing:.7px}
+.special-online-access p{font-size:11px;line-height:1.55;color:#c5cedd;margin:5px 0 12px}
+.special-online-join{display:flex;gap:9px;align-items:center}
+.special-online-join input{flex:1;min-width:0;width:100%;padding:10px;border-radius:9px;border:1px solid #7fc1e4;background:#111a2c;color:#fefefe;letter-spacing:2px;font-weight:900}
+.special-online-join button{flex:1;min-width:0;font-size:10px}
+.sp-heading{text-align:center;margin-bottom:15px}
+.sp-heading h2{font:900 clamp(26px,4.8vw,42px)/1.07 'Barlow Condensed',Impact,sans-serif;margin:9px 0;color:#ffe1fc}
+.sp-heading>p{font-size:12px;line-height:1.6;color:#a9c2e1;max-width:680px;margin:0 auto}
+.sp-code-panel{margin:15px auto;padding:18px;border:1px solid #b4e5faaf;border-radius:15px;text-align:center;
+ background:radial-gradient(circle at top,#34599160,#1c1839 68%)}
+.sp-code-panel>small{font-size:10px;letter-spacing:1px;color:#b3dff9;font-weight:900}
+.sp-code-panel>h2{font:900 clamp(32px,6vw,55px) 'Barlow Condensed',Impact,sans-serif;letter-spacing:6px;color:#f8eafa;margin:8px 0}
+.sp-code-panel>p{color:#aee9fe;font-size:12px;font-weight:800}
+.sp-code-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.sp-code-actions .btn{flex:1;max-width:245px}
+.sp-waiting-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(144px,1fr));gap:8px;margin:16px 0}
+.sp-wait-person{display:flex;gap:7px;align-items:center;padding:11px;border:1px dashed #6f7091;border-radius:10px;
+ color:#92a7c1;background:#111d35;font-size:11px;min-width:0}
+.sp-wait-person.ready{color:#e8d5ff;border:1px solid #a97cd0;background:#2c1e48}
+.sp-wait-person b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-help{margin:12px 0;font-size:12px;line-height:1.6;color:#acbfdb}
+.sp-bottom{margin:20px 0 0;text-align:center}
+.sp-round-header{display:flex;align-items:center;justify-content:space-between;gap:10px;
+ margin:15px 0;padding:10px 13px;background:linear-gradient(100deg,#212142,#16263f);
+ border-radius:11px;border:1px solid #9b81d776;font-size:11px;font-weight:900}
+.sp-round-header b{color:#ffd9ac;text-align:right}
+.sp-wallet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:10px 0}
+.sp-wallet{display:grid;gap:4px;background:#1a2541;border:1px solid #687db364;border-radius:10px;padding:10px;min-width:0}
+.sp-wallet.active{border-color:#f8c581;box-shadow:0 0 16px #ecc17b36;background:#43304b}
+.sp-wallet>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.sp-wallet span{font-size:13px;color:#fbd197;font-weight:900}
+.sp-wallet small{display:block;color:#d1c7df;font-size:9px;font-weight:600;margin-top:2px}
+.sp-current-card{display:flex;align-items:center;gap:14px;padding:14px;margin:15px 0;
+ background:linear-gradient(120deg,#311d4b,#1a2a43);border:1px solid #b089e480;border-radius:14px;min-height:160px}
+.sp-current-card .sp-photo{flex:0 0 126px;height:155px}
+.sp-current-card>div:nth-child(2){min-width:0}
+.sp-current-card h3{font:900 clamp(21px,4vw,32px) 'Barlow Condensed',Impact,sans-serif;margin:4px 0;overflow-wrap:anywhere}
+.sp-current-card p{font-size:12px;color:#a9d5ea;margin:6px 0}
+.sp-current-card small{display:block;color:#dcbbef;font-size:10px;font-weight:900}
+.sp-current-card>div:nth-child(2)>span{color:#f5bdeb;font-size:9px;font-weight:900;letter-spacing:.9px}
+.sp-current-card.secret{border-color:#bf9bff;background:linear-gradient(130deg,#301849,#1b213f)}
+.sp-photo{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden;
+ border:1px solid #8d72b394;border-radius:9px;background:radial-gradient(circle at 45% 27%,#835caf7a,#162039 75%);font-size:25px}
+.sp-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 17%;display:block}
+.sp-photo.sp-unknown{flex-direction:column;gap:5px;color:#f8d9ff;font:900 60px 'Barlow Condensed',Impact,sans-serif}
+.sp-photo.sp-unknown span{font:900 9px 'DM Sans',sans-serif;letter-spacing:1px;color:#b1b2ff}
+.sp-auction-panel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.sp-auction-panel>div{display:grid;justify-items:center;gap:4px;background:#16213c;border:1px solid #6250a67c;border-radius:11px;padding:10px}
+.sp-auction-panel small{font-size:9px;font-weight:900;letter-spacing:.5px;color:#b3bde5}
+.sp-auction-panel strong{color:#f6cfaa;font:900 32px 'Barlow Condensed',Impact,sans-serif}
+.sp-turn-panel{background:#24203c;border:1px solid #816db59c;border-radius:13px;padding:14px}
+.sp-turn-panel>b{font-size:14px;color:#f3ddff}
+.sp-turn-panel p{font-size:12px;line-height:1.6;color:#c2c2d7}
+.sp-bid-actions{display:flex;flex-wrap:wrap;gap:9px}
+.sp-bid-actions button{flex:1;min-width:120px}
+.sp-team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0}
+.sp-team-entry{border-radius:10px;border:1px solid #7c6f9d70;background:#14192e;padding:8px;min-width:0}
+.sp-team-entry>b{display:block;color:#ecc4ff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.sp-team-character{display:grid;grid-template-columns:82px minmax(0,1fr) auto;align-items:center;gap:5px;
+ padding:7px 4px;border-bottom:1px solid #5c578347}
+.sp-team-character:last-child{border:0}
+.sp-team-character span{font-size:9px;color:#9cb4d3;white-space:nowrap}
+.sp-team-character b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-team-character strong{color:#b8e6fc;font-size:12px}
+.sp-pick-note{font-size:13px;padding:12px;background:#1c2340;border-radius:9px;color:#c8ccee}
+.sp-revealed{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg,#362748,#1c3044);
+ border:1px solid #b994f2;border-radius:13px;padding:15px;margin:14px 0}
+.sp-revealed>.sp-photo{flex:0 0 135px;height:169px}
+.sp-revealed h3{font:900 28px 'Barlow Condensed',Impact,sans-serif;margin:0 0 6px}
+.sp-revealed p{color:#b1cadb}
+.sp-revealed small{display:block;color:#abbad3;margin-top:6px}
+.sp-stats{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}
+.sp-stats span{font-size:10px;padding:4px 5px;background:#4a396277;border-radius:6px}
+.sp-stats b{color:#fce7aa}
+.sp-draft-teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.sp-direct-team{padding:9px;border:1px solid #796ba79a;border-radius:11px;background:#191c36;min-width:0}
+.sp-direct-team>b{font-size:11px;display:block;margin-bottom:7px;color:#e5c3f5}
+.sp-direct-team>div{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.sp-direct-slot{min-width:0;text-align:center}
+.sp-direct-slot .sp-photo{height:62px;min-height:0}
+.sp-direct-slot small{display:block;font-size:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sp-online-pick{display:grid;gap:10px;padding:14px;border-radius:11px;border:1px solid #9d7ece8a;background:#1d1f3c}
+.sp-online-pick label{display:grid;gap:6px;font-size:11px;font-weight:800;color:#d3b9ea}
+.sp-online-pick input,.sp-online-pick select{padding:9px;border:1px solid #8662b2;border-radius:8px;background:#141a30;color:#fff;width:100%}
+.sp-direct-preview{display:flex;gap:11px;align-items:center}
+.sp-direct-preview .sp-photo{width:80px;height:103px}
+.sp-direct-preview strong,.sp-direct-preview small{display:block}
+.sp-direct-preview small{font-size:11px;color:#bac5df}
+.sp-direct-preview .rarity-chip{margin-top:7px}
+.sp-result-score{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin:10px 0}
+.sp-result-score>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px;border:1px solid #a882bc;
+ border-radius:10px;background:#24243f;min-width:0}
+.sp-result-score small{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.sp-result-score b{white-space:nowrap;font:900 25px 'Barlow Condensed',Impact,sans-serif;color:#e9c5fa}
+.sp-results-table{display:grid;gap:7px;overflow-x:auto}
+.sp-result-row{border:1px solid #8772ab;border-radius:11px;min-width:480px;overflow:hidden}
+.sp-result-row>strong{display:block;background:#482a5770;padding:8px;font-size:12px;color:#e6cdf9}
+.sp-result-row>div{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;padding:8px}
+.sp-result-row span{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:5px;align-items:center;min-width:0}
+.sp-result-row span.winner{color:#ffdb97}
+.sp-result-row .sp-photo{width:44px;height:54px;min-height:0}
+.sp-result-row small{font-size:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sp-result-row b{font-size:14px}
+.sp-replay-box{text-align:center;border:1px solid #b6a3d69a;background:#1b2140;padding:14px;border-radius:12px;margin:15px 0}
+.sp-replay-box p{font-size:12px;color:#c6d8ec}
+.sp-replay-box small{display:block;font-size:10px;margin:9px;color:#d5bfed}
+@media(max-width:550px){
+ .special-online-join{flex-direction:column;align-items:stretch}
+ .sp-current-card .sp-photo{flex-basis:100px;height:124px}
+ .sp-heading h2{font-size:27px}
+ .sp-round-header{font-size:10px}
+ .sp-revealed>.sp-photo{flex-basis:94px;height:125px}
+ .sp-revealed h3{font-size:22px}
+ .sp-team-grid{grid-template-columns:1fr}
+ .sp-draft-teams{grid-template-columns:1fr}
+ .sp-bid-actions button{font-size:10px}
+ .sp-wallet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
