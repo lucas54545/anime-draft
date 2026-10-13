@@ -22,7 +22,7 @@ assert.deepEqual(byId.anos.stats,[99,99,99,99,99]);
 assert.deepEqual(byId.rimuru.stats,[99,99,99,99,99]);
 assert.ok(byId.goku.stats.every(n=>n<=90),'Goku não deve ultrapassar 90');
 assert.ok(byId.vegeta.stats.every(n=>n<=90),'Vegeta não deve ultrapassar 90');
-for(const file of ['server.js','special-server.js','public/app.js','public/offline.js','public/special-modes.js','public/special-online.js','public/characters-local.js']){
+for(const file of ['server.js','special-server.js','public/portrait-loader.js','public/app.js','public/offline.js','public/special-modes.js','public/special-online.js','public/characters-local.js']){
   new vm.Script(read(file),{filename:file});
 }
 const server=read('server.js'),app=read('public/app.js'),offline=read('public/offline.js'),html=read('public/index.html');
@@ -53,7 +53,7 @@ const extraModes=read('public/special-modes.js');
 for(const id of ['localTournamentBtn','localMysteryBtn','localRouletteBtn','ffaBtn','direct5v5Btn','specialContent']){
   assert.ok(html.includes('id="'+id+'"'),'Botão ou tela V12 ausente: '+id);
 }
-assert.ok(html.includes('special-modes.js?v=13.1'),'Novo script precisa ser carregado');
+assert.ok(html.includes('special-modes.js?v=1.0'),'Novo script precisa ser carregado');
 assert.ok(app.includes("['lobby','offline','special','arena','battle']"),'Navegação V12 indisponível');
 assert.ok(app.includes('window.imageMarkup=imageMarkup;'),'Os retratos locais devem usar as imagens reais');
 for(const method of ['function tournamentBotDuel(','function tournamentAdvance(','function tournamentBracket(','function rouletteSpin(']){
@@ -73,7 +73,7 @@ assert.ok(app.includes("$('loginBtn').disabled=false;"),'Botão de entrar não d
 assert.ok(app.includes("!model.connected"),'Login local deve funcionar quando multiplayer cair');
 assert.ok(app.includes(String.raw`/\.github\.io$/i`),'GitHub Pages deve abrir o modo local sem erro de conexão');
 assert.ok(app.includes("$('localBotBtn').click();"),'Treino contra bot precisa ter fallback offline');
-assert.ok(html.includes('./app.js?v=13.1'),'Browser deve atualizar automaticamente o script corrigido');
+assert.ok(html.includes('./app.js?v=1.0'),'Browser deve atualizar automaticamente o script corrigido');
 console.log('✓ Arena V12.1: login sem WebSocket e jogo local liberado');
 
 
@@ -89,7 +89,7 @@ for(const id of ['onlineMysteryBtn','onlineRouletteBtn','onlineTournamentBtn','o
  'specialOnlineCodeInput','specialOnlineJoinBtn']){
   assert.ok(html.includes('id="'+id+'"'),'Controle de multiplayer V13 ausente: '+id);
 }
-assert.ok(html.includes('special-online.js?v=13.1'),'Script multiplayer precisa ser publicado com a versão V13');
+assert.ok(html.includes('special-online.js?v=1.0'),'Script multiplayer deve carregar na versão pública V1');
 assert.ok(server.includes("require('./special-server')"),'Servidor principal precisa carregar partidas online especiais');
 assert.ok(server.includes("specialMultiplayer.handle(user,data)"),'Ações especiais precisam ser autenticadas pelo WebSocket');
 assert.ok(server.includes("specialMultiplayer.resume(user)"),'Jogadores devem retornar à partida após reconexão');
@@ -114,3 +114,30 @@ assert.ok(offline.includes("$('direct5v5Btn').addEventListener('click',()=>start
 assert.ok(!extraModes.includes("$('direct5v5Btn').addEventListener('click',()=>open('duel'))"),'Botão 5v5 não deve abrir seleção livre');
 console.log('✓ V13.1: cinco modos multiplayer, leilão 5v5 de 50 moedas e soma total');
 require('./special-server.test.js');
+
+
+const portraitConfig=JSON.parse(read('portrait-config.json'));
+const portraitAliases=JSON.parse(read('public/portrait-aliases.json'));
+const portraitMap=JSON.parse(read('public/portrait-map.json'));
+const portraitLoader=read('public/portrait-loader.js');
+const portraitScript=read('scripts/build-portrait-manifest.cjs');
+new vm.Script(portraitScript.replace(/^#![^\\n]*\\n/,''),{filename:'scripts/build-portrait-manifest.cjs'});
+assert.equal(portraitConfig.version,'1.0');
+assert.equal(portraitAliases.version,'1.0');
+assert.equal(portraitMap.version,'1.0');
+assert.equal(Object.keys(portraitConfig.aliases).length,142,'Os 142 personagens devem ter aliases cadastrados');
+assert.ok(chars.every(p=>portraitConfig.aliases[p.id]&&portraitConfig.animeIds[p.anime]),
+  'Todo personagem deve ter aliases e ID do anime na fonte de fotos');
+assert.equal(Object.keys(portraitAliases.aliases).length,142);
+assert.equal(portraitMap.totalCharacters,142);
+assert.ok(html.includes('portrait-loader.js?v=1.0'),'A V1 deve carregar o catálogo de fotos');
+assert.ok(html.includes('V 1.0 • LANÇAMENTO'),'A versão pública deve ser V1');
+assert.ok(html.includes('Anime Draft Battle V1'),'Título de SEO da V1 ausente');
+assert.ok(app.includes('window.animeImageFailed=function(img)'),'Fotos quebradas precisam de recuperação');
+assert.ok(app.includes("const proxy=imageProxy(person.id)"),'As imagens precisam de alternativa via servidor');
+assert.ok(app.includes("window.ANIME_PORTRAITS?.[id]"),'A busca deve consultar o catálogo de retratos');
+assert.ok(app.includes("window.ANIME_PORTRAIT_ALIASES?.[person.id]"),'Nomes japoneses precisam ser pesquisados');
+assert.ok(server.includes("const PORTRAIT_INDEX=require('./public/portrait-map.json').images||{};"),
+  'O proxy do servidor deve usar fotos catalogadas');
+assert.ok(portraitLoader.includes('anime-portraits-updated'),'O carregador deve atualizar imagens já mostradas');
+console.log('✓ V1: lançamento, 142 aliases, catálogo de fotos e recuperação de imagens quebradas');
