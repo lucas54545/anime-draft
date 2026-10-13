@@ -60,15 +60,44 @@ function saveSession(){localStorage.setItem(SESSION_KEY,JSON.stringify({name:mod
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500);}
 function send(type,extra={}){if(!model.socket||model.socket.readyState!==WebSocket.OPEN){toast('Sem conexão com a arena. Aguarde reconectar.');return false;}model.socket.send(JSON.stringify({type,...extra}));return true;}
-function onlineState(isConnected){model.connected=isConnected;$('netLed').classList.toggle('ok',isConnected);$('netLabel').textContent=isConnected?'CONECTADO':'DESCONECTADO';$('loginBtn').disabled=!isConnected;$('inviteBtn').disabled=!isConnected;$('botBtn').disabled=!isConnected;}
+function onlineState(isConnected){
+  model.connected=!!isConnected;
+  $('netLed').classList.toggle('ok',model.connected);
+  $('netLabel').textContent=model.connected?'CONECTADO':'MODO LOCAL';
+  // Não bloquear o botão ENTRAR: jogos locais independem do WebSocket.
+  $('loginBtn').disabled=false;
+  $('botBtn').disabled=false; // utiliza o BOT local automaticamente sem servidor
+  $('inviteBtn').disabled=!model.connected;
+  $('squadCreateBtn').disabled=!model.connected;
+  $('squadJoinBtn').disabled=!model.connected;
+  $('arenaConnectionNotice').hidden=model.connected;
+}
 function show(view){for(const id of ['lobby','offline','special','arena','battle'])$(id).hidden=id!==view;$('hero').hidden=view!=='lobby';if(view==='offline'){heading('LEILÃO DE ANIME','20 moedas, poderes ocultos e batalha de 5 atributos.','// MODO LOCAL');}else if(view==='lobby'){heading('ENTRE NA ARENA','Convide seu rival ou treine contra o bot.','// MULTIPLAYER ARENA');}else if(view==='special')heading('NOVOS MODOS DE JOGO','Batalhas diferentes para você e seus amigos.','// EVENTOS ESPECIAIS');else if(view==='arena')heading('LEILÃO DE PERSONAGENS','Poder oculto no leilão; revelado assim que o personagem entra no seu time.','// SALA DE BATALHA');else heading('BATALHA FINAL','Veja os cinco confrontos simultâneos e descubra quem venceu.','// RESULTADO DA PARTIDA');}
 function heading(h,p,tag){$('panelHeading').textContent=h;$('panelDescription').textContent=p;$('panelEyebrow').textContent=tag;}
 function connect(){
-  let url=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
-  if(location.protocol==='file:'){onlineState(false);$('netLabel').textContent='MODO LOCAL';$('loginBox').hidden=true;return;}
-  const ws=new WebSocket(url);model.socket=ws;
-  ws.addEventListener('open',()=>{onlineState(true);if(model.name)send('login',{name:model.name,token:model.token});});
-  ws.addEventListener('close',()=>{onlineState(false);model.logged=false;model.online=[];renderOnline();setTimeout(connect,2200);});
+  onlineState(false);
+  // GitHub Pages serve arquivos estáticos: não oferece WebSocket para partidas online.
+  // Mesmo assim, o visitante consegue entrar e jogar todos os modos locais.
+  if(location.protocol==='file:' || /\\.github\\.io$/i.test(location.hostname)){
+    $('netLabel').textContent='MODO LOCAL';
+    return;
+  }
+  const url=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
+  let ws;
+  try{ws=new WebSocket(url);}
+  catch(e){console.warn('Servidor online indisponível:',e);setTimeout(connect,5000);return;}
+  model.socket=ws;
+  ws.addEventListener('open',()=>{
+    onlineState(true);
+    if(model.name)send('login',{name:model.name,token:model.token});
+  });
+  ws.addEventListener('close',()=>{
+    // Preservar a sessão local para que a desconexão não expulse o jogador do menu.
+    if(model.socket===ws)model.socket=null;
+    onlineState(false);model.online=[];renderOnline();
+    if(!model.room&&!model.squadLobby)renderLobby();
+    setTimeout(connect,3500);
+  });
   ws.addEventListener('error',()=>onlineState(false));
   ws.addEventListener('message',ev=>{try{receive(JSON.parse(ev.data));}catch(e){console.warn('Mensagem não pôde ser lida:',e)}});
 }
@@ -77,7 +106,7 @@ function receive(data){
     case 'connected':break;
     case 'error':toast(data.message||'Erro desconhecido.');break;
     case 'replaced':toast('Sua sessão foi aberta em outra aba.');break;
-    case 'welcome':model.logged=true;model.name=data.name;saveSession();renderLobby();if(!model.room)show('lobby');break;
+    case 'welcome':model.logged=true;model.name=data.name;saveSession();renderLobby();renderOnline();if(!model.room)show('lobby');break;
     case 'presence':model.online=data.players||[];$('playerCount').textContent=model.online.length;renderOnline();break;
     case 'invite_received':model.invitation={id:data.id,from:data.from};renderInvitations();toast('⚔ '+data.from+' desafiou você!');if(!model.room)show('lobby');break;
     case 'invite_sent':$('inviteStatus').textContent='✓ Convite enviado para '+data.to+'. Aguarde a resposta.';toast('Convite enviado!');break;
@@ -145,7 +174,18 @@ function renderOnline(){
 function login(){
   const name=$('nickname').value.trim().replace(/\s+/g,' ');
   if(name.length<2||name.length>20){toast('Digite um apelido entre 2 e 20 caracteres.');return;}
-  if(send('login',{name,token:model.token})){model.name=name;saveSession();}
+  if(!/^[\\p{L}\\p{N} _.-]+$/u.test(name)){toast('Use letras, números, espaço, ponto ou traço no apelido.');return;}
+  model.name=name;saveSession();
+  if(!model.connected){
+    model.logged=true;renderLobby();renderOnline();show('lobby');
+    toast('🎮 Você entrou na arena! Os modos locais estão disponíveis; multiplayer exige servidor online.');
+    return;
+  }
+  // O servidor envia "welcome" para confirmar a entrada online.
+  if(!send('login',{name,token:model.token})){
+    model.logged=true;renderLobby();show('lobby');
+    toast('Entrada local liberada. Servidor multiplayer temporariamente indisponível.');
+  }
 }
 function inviteFriend(){
   const to=$('friendName').value.trim();
@@ -445,12 +485,18 @@ function requestRematch(){
 function backLobby(){cancelTimers();send('leave');model.room=null;model.battle=null;renderLobby();show('lobby');}
 $('loginBtn').addEventListener('click',login);
 $('nickname').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
-$('changeName').addEventListener('click',()=>{model.logged=false;model.name='';renderLobby();$('nickname').focus();});
+$('changeName').addEventListener('click',()=>{
+  model.logged=false;model.name='';saveSession();renderLobby();renderOnline();$('nickname').focus();
+});
 $('inviteBtn').addEventListener('click',inviteFriend);
 $('friendName').addEventListener('keydown',e=>{if(e.key==='Enter')inviteFriend();});
 $('acceptBtn').addEventListener('click',()=>respond(true));
 $('declineBtn').addEventListener('click',()=>respond(false));
-$('botBtn').addEventListener('click',()=>send('bot'));
+$('botBtn').addEventListener('click',()=>{
+  if(model.connected&&send('bot'))return;
+  // Se o servidor estiver fora do ar, usar o mesmo bot das partidas locais.
+  $('localBotBtn').click();
+});
 $('squadCreateBtn').addEventListener('click',createSquad);
 $('squadJoinBtn').addEventListener('click',joinSquad);
 $('squadLeaveBtn').addEventListener('click',leaveSquad);
@@ -465,7 +511,7 @@ $('copyBattle').addEventListener('click',copyResult);
 $('battleRematch').addEventListener('click',requestRematch);
 $('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;try{localStorage.setItem('anime_draft_sound_v10',soundEnabled?'on':'off');}catch{}soundUI();if(soundEnabled)playAnimeSfx('confirm');});
 $('nickname').value=model.name;
-show('lobby');renderLobby();renderOnline();soundUI();
+show('lobby');renderLobby();renderOnline();soundUI();onlineState(false);
 try{
  const code=new URLSearchParams(location.search).get('squad');
  if(code&&/^[A-Z2-9]{6}$/i.test(code))$('squadCodeInput').value=code.toUpperCase();
