@@ -56,3 +56,34 @@
 .offline-final{text-align:center;border:1px solid #c6ee6e70;background:radial-gradient(circle at top,#c8ff5328,#101a2b 75%);border-radius:12px;padding:26px 15px}.offline-final>h2{font:900 47px/1 'Barlow Condensed',Impact,sans-serif;margin:19px 0}.offline-score{display:flex;justify-content:space-around;align-items:center;gap:8px}.offline-score>div{min-width:0}.offline-score small{display:block;color:#bccbdc;font-size:11px;overflow-wrap:anywhere}.offline-score strong{display:block;font:900 70px 'Barlow Condensed',Impact;color:var(--lime)}.offline-score>div span{font-size:10px;color:#98b0c9}.offline-score>b{font:900 38px 'Barlow Condensed'}
 .offline-fight{border:1px solid #35445d;border-radius:9px;background:#152135;margin:11px 0;padding:13px}.offline-fight-label{text-align:center;color:var(--lime);font-weight:900;font-size:11px;letter-spacing:1px;margin-bottom:10px}.offline-fight-row{display:grid;grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);align-items:center;gap:9px}.offline-fight-row>div{min-width:0;padding:8px;border-radius:8px}.offline-fight-row>div.winner{background:#d8fd5718;box-shadow:inset 0 0 0 1px #d8fd574f}.offline-fight-row>b{text-align:center;color:var(--lime);font-size:10px}.offline-fight-row strong{font-size:28px;font-weight:900}.duel-name{font-size:12px;overflow-wrap:anywhere}.offline-fight-row .power-bar{margin:8px 0 0;background:#344057;height:5px;border-radius:5px;overflow:hidden}.offline-fight-row .power-bar span{height:100%;display:block;background:var(--lime)}
 @media(max-width:650px){.offline-teams{grid-template-columns:1fr}.offline-card-art{height:135px}.offline-portrait>span{font-size:56px}.offline-card-copy{padding:11px}.offline-card-copy strong{font-size:23px}.offline-revealcard>.offline-portrait{height:115px}.offline-score strong{font-size:50px}.offline-final>h2{font-size:36px}}
+
+/* v4 — lances alternados, cronômetro sincronizado e fotos nos times */
+.live-auction{margin:17px 0 0;padding:18px 20px;border:1px solid #d8fd5770;background:linear-gradient(125deg,#d9fd5715,#1b2a4185);border-radius:12px}
+.live-auction-numbers{display:flex;gap:16px;align-items:center;justify-content:space-between}
+.live-auction-numbers small{display:block;font-size:10px;letter-spacing:1px;color:#b4c6d9;font-weight:900}
+.live-auction-numbers strong{font:900 44px/1.2 'Barlow Condensed',Impact,sans-serif;color:var(--lime)}
+.live-auction p{margin:11px 0 0;color:#d3e2ed;font-size:12px;font-weight:700}
+.clock-face{min-width:155px;text-align:right}.clock-face>b{display:block;font:900 56px/1.05 'Barlow Condensed',Impact,sans-serif;color:var(--lime)}
+.clock-face.urgent b,.urgent-text{color:#ff7d81!important;animation:pulse .65s infinite alternate}
+@keyframes pulse{to{opacity:.58}}
+.timer-track{height:6px;border-radius:10px;background:#37475b;overflow:hidden;margin-top:5px}
+.timer-track span{display:block;width:100%;height:100%;border-radius:10px;background:linear-gradient(90deg,#72eedf,var(--lime));transition:width .12s linear}
+.auction-buttons{display:grid;grid-template-columns:1.3fr .7fr;gap:9px;margin-top:14px}
+.auction-buttons .btn{width:100%;margin:0!important}
+.bid-help{color:#a7bcd1;font-size:12px;margin:4px 0}
+.offline-bidbox .auction-buttons{margin-top:14px}
+.offline-slot-ico{width:49px;min-width:49px;height:61px;overflow:hidden;border:1px solid #455673;border-radius:7px;display:grid;place-items:center;background:#2c3a53}
+.offline-slot-ico .offline-portrait{width:100%;height:100%;min-height:0}.offline-slot-ico .offline-portrait>span{font-size:23px}
+.fight-portrait{width:68px;height:74px;margin-bottom:8px;border-radius:7px;border:1px solid #405372;overflow:hidden;background:#273348}
+.fight-portrait .offline-portrait{min-height:0;height:100%;width:100%}.fight-portrait .offline-portrait>span{font-size:30px}
+.offline-fight-row>div>.fight-portrait{margin-left:auto;margin-right:auto}
+.offline-card-art .offline-portrait,.character-art{background:radial-gradient(circle at 50% 42%,#566a9d88,#15223b 75%)}
+.offline-card-art .offline-portrait:after,.character-art:after{content:'ANIME DRAFT';position:absolute;bottom:4px;right:6px;color:#ffffff31;letter-spacing:2px;font-weight:900;font-size:8px;pointer-events:none}
+.offline-portrait img.character-img{object-position:top center}
+.character-art img.character-img{object-position:center 18%}
+@media(max-width:580px){.live-auction{padding:12px}.clock-face{min-width:115px}.clock-face>b{font-size:43px}.live-auction-numbers strong{font-size:36px}.auction-buttons{grid-template-columns:1fr}.offline-card-art{height:175px}.offline-slot-ico{min-width:40px;width:40px;height:51px}.offline-slot-ico .offline-portrait>span{font-size:18px}}
+
+/* Pontuação acumulada após cada escolha */
+.team-running-total{float:right;color:#d8fd57;font-size:.82em;letter-spacing:.04em}
+.battle-banner .scoreboards b{font-size:clamp(2.2rem,6vw,4.5rem)}
+.offline-final .offline-score strong{font-size:clamp(2rem,6vw,3.8rem)}
