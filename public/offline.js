@@ -20,6 +20,32 @@ function historyPanel(){
   }).join(''):'<p class="muted">Nenhum leilão concluído.</p>';
   return '<details class="auction-history"><summary>📜 HISTÓRICO DE LEILÕES · '+records.length+' / 10</summary><div class="history-list">'+rows+'</div></details>';
 }
+function rouletteSpin(pool){
+ st.turnSeconds=10;st.roulette=null;
+ if(st.mode!=='roulette')return drawRandom(pool);
+ const effects=[
+   {key:'coins',icon:'🪙',name:'CHUVA DE MOEDAS',desc:'As duas equipes recebem +2 moedas. Máximo: 30.'},
+   {key:'bonus',icon:'🎁',name:'BÔNUS SURPRESA',desc:'Uma das equipes recebe +3 moedas extras.'},
+   {key:'speed',icon:'⚡',name:'MODO TURBO',desc:'Cada jogador tem só 7 segundos para responder ao lance.'},
+   {key:'slow',icon:'⏳',name:'TEMPO EXTRA',desc:'Cada jogador tem 15 segundos para responder ao lance.'},
+   {key:'portal',icon:'🌌',name:'PORTAL MISTERIOSO',desc:'O sorteio favorece personagens especiais, mas suas forças continuam ocultas.'}
+ ];
+ const fx=effects[Math.floor(Math.random()*effects.length)];
+ st.roulette=fx;
+ if(fx.key==='coins')st.budgets=st.budgets.map(v=>Math.min(30,v+2));
+ if(fx.key==='bonus'){
+  const lucky=Math.floor(Math.random()*2);
+  st.budgets[lucky]=Math.min(30,st.budgets[lucky]+3);
+  fx.desc='🎁 '+st.names[lucky]+' recebeu +3 moedas extras!';
+ }
+ if(fx.key==='speed')st.turnSeconds=7;
+ if(fx.key==='slow')st.turnSeconds=15;
+ if(fx.key==='portal'){
+  const special=pool.filter(p=>['Épico','Lendário','Mítico'].includes(p.rarity));
+  if(special.length)return special[Math.floor(Math.random()*special.length)];
+ }
+ return drawRandom(pool);
+}
 function drawRandom(pool){
  const weights=[['Comum',18],['Raro',30],['Épico',31],['Lendário',15],['Mítico',6]];
  const buckets=weights.map(([rarity,weight])=>({weight,items:pool.filter(p=>p.rarity===rarity)})).filter(b=>b.items.length);
@@ -101,10 +127,10 @@ function draw(){
   timers();
   if(st.round===10){battle();return;}
   const pool=roster.filter(p=>!st.seen.includes(p.id));
-  const candidate=drawRandom(pool);
+  const candidate=rouletteSpin(pool);
   st.seen.push(candidate.id);st.current=candidate;
   st.leader=-1;st.bid=0;st.bidMode=null;st.turn=free(st.round%2).length?st.round%2:1-st.round%2;
-  st.deadline=Date.now()+10000;st.phase='auction';st.lastBeepSecond=10;
+  st.deadline=Date.now()+(st.turnSeconds||10)*1000;st.phase='auction';st.lastBeepSecond=10;
   auction();schedule();
 }
 function updateClock(){
@@ -113,7 +139,7 @@ function updateClock(){
   const second=Math.ceil(left);
   if(second>0&&second<=3&&st.lastBeepSecond!==second){st.lastBeepSecond=second;sound('tick');}
   if($('localSeconds'))$('localSeconds').textContent=second;
-  if($('localTimerBar'))$('localTimerBar').style.width=left*10+'%';
+  if($('localTimerBar'))$('localTimerBar').style.width=Math.max(0,Math.min(100,left/(st.turnSeconds||10)*100))+'%';
   if($('localSeconds'))$('localSeconds').classList.toggle('urgent-text',left<=3);
   if($('localRaise'))$('localRaise').disabled=left<=0||st.bidMode==='avoid'||st.bid+1>st.budgets[st.turn];
   if($('localAvoid'))$('localAvoid').disabled=left<=0||st.bidMode==='buy'||!free(0).length||!free(1).length||Math.abs(st.bidMode==='avoid'?st.bid-1:-1)>st.budgets[st.turn];
@@ -128,12 +154,12 @@ function expireAuctionTurn(){
     // Só se ninguém puder dar lance é necessário distribuir sem custo.
     endBid('nenhum lance possível');return;
   }
-  st.deadline=Date.now()+10000;st.lastBeepSecond=10;
+  st.deadline=Date.now()+(st.turnSeconds||10)*1000;st.lastBeepSecond=10;
   auction();schedule();
 }
 function schedule(){
   timers();ticker=setInterval(updateClock,125);updateClock();
-  if(st?.mode==='bot'&&st.phase==='auction'&&st.turn===1){
+  if(st&&['bot','mystery','roulette','tournament'].includes(st.mode)&&st.phase==='auction'&&st.turn===1){
     botWait=setTimeout(()=>{
       if(!st||st.phase!=='auction'||st.turn!==1)return;
       const next=st.bidMode==='avoid'?st.bid-1:st.bid+1,desired=1+Math.floor(Math.random()*6);
@@ -148,10 +174,11 @@ function schedule(){
 }
 function auction(){
   const turn=st.turn,next=st.bid+1,neg=st.bidMode==='avoid'?st.bid-1:-1;
-  root().innerHTML=heading('LEILÃO • 10 SEGUNDOS','Escolha comprar +1 ou evitar -1: quem evitar perde as moedas no limbo.')+
+  root().innerHTML=heading(st.mode==='roulette'?'🎰 ROLETA • '+(st.turnSeconds||10)+' SEGUNDOS':'LEILÃO • 10 SEGUNDOS','Escolha comprar +1 ou evitar -1: quem evitar perde as moedas no limbo.')+
+    (st.mode==='roulette'&&st.roulette?'<div class="roulette-event"><div class="roulette-wheel">🎰</div><div><span>EFEITO DA RODADA</span><h3>'+st.roulette.icon+' '+esc(st.roulette.name)+'</h3><p>'+esc(st.roulette.desc)+'</p></div></div>':'')+
     '<div class="offline-budgets"><div><b>'+esc(st.names[0])+'</b><span>🪙 '+st.budgets[0]+' moedas</span></div><strong>VS</strong><div><b>'+esc(st.names[1])+'</b><span>🪙 '+st.budgets[1]+' moedas</span></div></div>'+
     '<div class="auction-pair single-auction">'+card(st.current)+'</div>'+
-    '<div class="live-auction"><div class="live-auction-numbers"><div><small>LANCE ATUAL</small><strong>🪙 '+st.bid+'</strong></div><div class="clock-face"><small>TEMPO PARA RESPONDER</small><b id="localSeconds">10</b><div class="timer-track"><span id="localTimerBar"></span></div></div></div><p>'+(st.leader<0?'Faça o primeiro lance: +1 para comprar ou -1 para evitar':st.bidMode==='avoid'?esc(st.names[st.leader])+' queimará '+Math.abs(st.bid)+' moedas no limbo':esc(st.names[st.leader])+' está vencendo')+'</p></div>'+
+    '<div class="live-auction"><div class="live-auction-numbers"><div><small>LANCE ATUAL</small><strong>🪙 '+st.bid+'</strong></div><div class="clock-face"><small>TEMPO PARA RESPONDER</small><b id="localSeconds">'+(st.turnSeconds||10)+'</b><div class="timer-track"><span id="localTimerBar"></span></div></div></div><p>'+(st.leader<0?'Faça o primeiro lance: +1 para comprar ou -1 para evitar':st.bidMode==='avoid'?esc(st.names[st.leader])+' queimará '+Math.abs(st.bid)+' moedas no limbo':esc(st.names[st.leader])+' está vencendo')+'</p></div>'+
     '<div class="offline-bidbox"><div class="offline-bidline"><div><span class="section-eyebrow">É A VEZ DE</span><h3>'+esc(st.names[turn])+'</h3></div><div class="offline-current">🪙 <strong>'+st.bid+'</strong></div></div>'+
     '<p class="offline-desc">Saldo: '+st.budgets[turn]+'. '+(st.bidMode==='avoid'?'Quem oferecer mais negativo evita o personagem; as moedas desaparecem.':st.bidMode==='buy'?'Quem oferecer mais positivo fica com o personagem.':'Para abrir o leilão, escolha comprar ou evitar. Pegar grátis não está disponível.')+'</p>'+
     '<div class="auction-buttons">'+(st.bidMode==='avoid'?'':btn('⚡ COMPRAR +'+next,'localRaise'))+
@@ -172,7 +199,7 @@ function bid(amount){
     if(amount<0&&(!free(0).length||!free(1).length))return;
     st.bidMode=amount<0?'avoid':'buy';
   }else if(amount!==st.bid+(st.bidMode==='avoid'?-1:1))return;
-  st.leader=st.turn;st.bid=amount;st.turn=1-st.turn;st.deadline=Date.now()+10000;st.lastBeepSecond=10;sound(amount<0?'avoid':'bid');
+  st.leader=st.turn;st.bid=amount;st.turn=1-st.turn;st.deadline=Date.now()+(st.turnSeconds||10)*1000;st.lastBeepSecond=10;sound(amount<0?'avoid':'bid');
   if(!free(st.turn).length||Math.abs(st.bid)+1>st.budgets[st.turn]){endBid('rival não pode cobrir');return;}
   auction();schedule();
 }
@@ -189,7 +216,7 @@ function endBid(reason){
   if(!free(winner).length)winner=1-winner;
   st.winner=winner;st.avoider=avoider;st.price=price;
   sound('confirm');choose();
-  if(st.mode==='bot'&&winner===1)botWait=setTimeout(()=>chooseSlot(free(1)[Math.floor(Math.random()*free(1).length)]),900);
+  if(['bot','mystery','roulette','tournament'].includes(st.mode)&&winner===1)botWait=setTimeout(()=>chooseSlot(free(1)[Math.floor(Math.random()*free(1).length)]),900);
 }
 function choose(){
   const n=st.winner,p=st.current;
