@@ -365,11 +365,16 @@ function renderBattle(data){
   $('battleTotal0').textContent=data.scores[0]+' atributos vencidos';
   $('battleTotal1').textContent=data.scores[1]+' atributos vencidos';
   const area=$('battleRows');
+  $('battleHistory').innerHTML=historyMarkup(data.history,data.names);
+  $('battleRematch').disabled=false;$('battleRematch').textContent='🔄 REVANCHE';
+  $('rematchStatus').textContent='Os dois jogadores precisam aceitar para começar novamente.';
+  playAnimeSfx('victory');
   area.innerHTML='<div class="battle-lane-head"><span>'+safe(data.names[0])+'</span><span>FOTOS NO CENTRO</span><span>'+safe(data.names[1])+'</span></div>';
   data.details.forEach((item,i)=>{
     const left=item.fighters[0],right=item.fighters[1];
     maybePhoto(left);maybePhoto(right);
     const row=document.createElement('div');row.className='battle-row battle-row-v9';
+    row.style.setProperty('--battle-delay',(i*85)+'ms');
     row.innerHTML=`<div class="versus-text left ${item.winner===0?'win':''}"><small>JOGADOR 1</small><b>${safe(left.name)}</b><strong>${left.value}</strong></div><div class="versus-middle"><div class="middle-photos"><div class="mid-photo ${item.winner===0?'win':''}">${imageMarkup(left)}</div><div class="mid-vs-wrap"><span>VS</span><em>${safe(ATTR[i])}</em></div><div class="mid-photo ${item.winner===1?'win':''}">${imageMarkup(right)}</div></div></div><div class="versus-text right ${item.winner===1?'win':''}"><small>JOGADOR 2</small><b>${safe(right.name)}</b><strong>${right.value}</strong></div>`;
     area.append(row);
   });
@@ -378,6 +383,15 @@ async function copyResult(){
   const b=model.battle;if(!b)return;
   const txt=`⚔ ANIME DRAFT BATTLE\n${b.names[0]} ${b.totals[0]} x ${b.totals[1]} ${b.names[1]}\n${b.details.map(x=>x.attribute+': '+x.fighters[0].value+' x '+x.fighters[1].value).join('\n')}\n🏆 ${b.winner<0?'Empate':b.names[b.winner]}`;
   try{await navigator.clipboard.writeText(txt);toast('Resultado copiado!')}catch{toast('Não foi possível copiar automaticamente.');}
+}
+function requestRematch(){
+ if(!model.battle)return;
+ if(send('rematch')){
+  playAnimeSfx('confirm');
+  $('battleRematch').disabled=true;
+  $('battleRematch').textContent='⏳ REVANCHE SOLICITADA';
+  $('rematchStatus').textContent='Aguardando confirmação do adversário...';
+ }
 }
 function backLobby(){cancelTimers();send('leave');model.room=null;model.battle=null;renderLobby();show('lobby');}
 $('loginBtn').addEventListener('click',login);
@@ -394,7 +408,9 @@ $('avoidBid').addEventListener('click',avoidBid);
 $('leaveMatch').addEventListener('click',()=>{if(confirm('Sair da partida? Seu adversário também voltará ao lobby.'))backLobby();});
 $('goLobby').addEventListener('click',backLobby);
 $('copyBattle').addEventListener('click',copyResult);
+$('battleRematch').addEventListener('click',requestRematch);
+$('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;try{localStorage.setItem('anime_draft_sound_v10',soundEnabled?'on':'off');}catch{}soundUI();if(soundEnabled)playAnimeSfx('confirm');});
 $('nickname').value=model.name;
-show('lobby');renderLobby();renderOnline();
+show('lobby');renderLobby();renderOnline();soundUI();
 if(location.protocol!=='file:')fetch('./api/characters').then(r=>r.ok?r.json():[]).then(r=>model.roster=r).catch(()=>{});
 connect();
