@@ -185,3 +185,246 @@ body:has(#battle:not([hidden])),body:has(#offline:not([hidden]) .offline-final){
   #battle .duelist .mini-avatar{width:25px;height:26px;min-width:25px}
   #offline .offline-fight{padding:3px 5px;margin:3px 0}
 }
+
+/* ==============================================
+   V8 — SHONEN ARENA. Estilo anime e duelos espelhados.
+   ============================================== */
+:root{
+ --bg:#0c0920;--panel:#16102e;--panel2:#21153a;--stroke:#5b3a83;
+ --muted:#b7abd2;--white:#fdfaff;--lime:#ff70c6;--lime-dark:#ff4fae;
+ --cyan:#66eaff;--orange:#ffc773;--red:#ff6c98;
+}
+html,body{max-width:100%;overflow-x:hidden}
+body{
+ background:
+  radial-gradient(ellipse at 85% -14%,#9c35d833,transparent 52%),
+  radial-gradient(ellipse at -5% 40%,#20cceb1d,transparent 43%),
+  repeating-linear-gradient(130deg,transparent 0 72px,#be63ff09 73px 75px,transparent 76px 140px),
+  #0b091d;
+}
+.backdrop{
+ background:radial-gradient(ellipse at 92% 8%,#ff44bd16,transparent 39%),
+ radial-gradient(ellipse at 11% 58%,#4dd9ff13,transparent 37%);
+}
+.backdrop:after{background:repeating-linear-gradient(0deg,transparent 0 4px,#b48be503 5px 6px)}
+.topbar{border-bottom:1px solid #c161ff3a}
+.brand-mark{
+ color:white!important;
+ background:linear-gradient(138deg,#ff79bc 3%,#a554fb 50%,#32cffa 100%)!important;
+ border:1px solid #ffb5e5!important;box-shadow:0 0 24px #ea49bd52;
+ transform:skew(-9deg);
+}
+.brand .lime,h1 span{color:#ff8bd1}
+.eyebrow,.section-eyebrow{color:#ff9ddd;letter-spacing:1.8px}
+.hero{position:relative;isolation:isolate}
+.hero:before{
+ content:'アニメ · アリーナ · バトル';
+ position:absolute;top:9px;right:0;max-width:100%;
+ color:#be88ff0b;font:900 clamp(34px,6vw,91px)/1 'Barlow Condensed',sans-serif;
+ white-space:nowrap;pointer-events:none;z-index:-1;
+}
+.hero-art{filter:drop-shadow(0 0 28px #ca53ff26)}
+.hero .orbit{border-color:#d97dff38}
+.hero-card{
+ border:1px solid #e679ff7a!important;
+ box-shadow:0 20px 35px #0006,0 0 35px #c450df29!important;
+ background:linear-gradient(150deg,#422258ee,#1b1744dd)!important;
+}
+.hero-vs{color:#fff;filter:drop-shadow(0 0 15px #ff42d1)}
+.hero h1{text-shadow:0 9px 24px #06041299}
+.hero h1 em{
+ background:linear-gradient(90deg,#ff7ecb 0%,#bd85ff 53%,#68f1fd 100%);
+ -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.anime-hero-caption{
+ font-size:10px;letter-spacing:2.1px;color:#83e6f4;font-weight:900;
+ margin:-10px 0 15px;text-transform:uppercase;
+}
+.hero-pills span{
+ color:#e9dfff;background:#5a2c8b37;border-color:#be84fe55;
+ box-shadow:inset 0 0 0 1px #69298b17;
+}
+.app-panel,.rail-card{
+ background:linear-gradient(160deg,#1b1333ef 0%,#14112aed 65%,#0e1126e8 100%);
+ border:1px solid #8c55b069;
+ box-shadow:0 20px 60px #0007,0 0 22px #7e49bd15;
+}
+.panel-heading{background:linear-gradient(120deg,#3a2059,#201739 65%,#161931)!important;border-bottom-color:#ae5bea4a!important}
+.panel-heading:before{content:'✦';color:#f589d5;position:absolute;right:15px;top:8px;opacity:.3}
+.version{color:#ffb0ec!important}
+.btn-primary{
+ background:linear-gradient(105deg,#f75aa9,#b267fe)!important;
+ color:#fff!important;border:1px solid #ff9edd!important;
+ box-shadow:0 8px 20px #e958c62e;text-shadow:0 1px 3px #320e388c;
+}
+.btn-primary:hover:not(:disabled){filter:brightness(1.13);box-shadow:0 8px 25px #ee5ac64e}
+.btn-outline{border-color:#b072e8!important;color:#f0dffb!important}
+.btn-danger{background:linear-gradient(120deg,#6d283c,#431e50)!important}
+input{background:#130f2b!important;color:#fff!important;border-color:#724b9b!important}
+input:focus{border-color:#fa87d1!important;box-shadow:0 0 0 3px #ec64bf24}
+.live-auction{
+ background:linear-gradient(120deg,#d25bfc19,#6e29d51a,#51d0ff14)!important;
+ border-color:#e46dd269!important;
+}
+.live-auction-numbers strong,.clock-face>b{color:#ff91dc!important}
+.timer-track span{background:linear-gradient(90deg,#60e7f5,#f967c6)!important}
+.character-card,.offline-card{border-color:#a463d778!important;box-shadow:0 12px 32px #0005}
+.character-card.featured,.single-auction .offline-card{border-color:#f17bcb!important;box-shadow:0 0 0 1px #a45dff55,0 0 40px #cd6bfa1a}
+.character-art,.offline-card-art{
+ background:
+ radial-gradient(ellipse at 56% 22%,#bb4cff59,transparent 48%),
+ repeating-linear-gradient(128deg,transparent 0 31px,#eaa8ff12 32px 34px),
+ linear-gradient(140deg,#352257,#16122d 80%)!important;
+}
+.character-art:after,.offline-card-art .offline-portrait:after{color:#ffffff35!important}
+.character-label,.offline-tag{
+ background:linear-gradient(95deg,#fc88d6,#a36cff)!important;color:#170f2c!important
+}
+.power-summary,.local-power{border-color:#7145a160!important}
+.position-btn{border-color:#9d59d271!important;background:#26183d!important}
+.position-btn:not(:disabled):hover{background:#532770!important;border-color:#ef84e0!important}
+
+/* Times: mostrar apenas o atributo da posição, sem as 5 estatísticas do boneco. */
+.team-boards,.offline-teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.team-board.compact-team,.offline-team.compact-team{
+ padding:9px;border-color:#8657b46e;background:#1c1631;
+}
+.team-board.compact-team h4{font-size:14px;margin:0 0 7px}
+.compact-slot,.team-slot.compact-slot,.offline-slot.compact-slot{
+ display:flex;align-items:center;gap:7px;padding:5px!important;min-height:45px!important;
+ border-bottom:1px solid #ae72d62c;background:transparent;
+}
+.compact-slot .mini-avatar,.compact-slot .offline-slot-ico{
+ flex:0 0 29px;width:29px;height:33px;min-height:33px;
+ border-radius:6px;border:1px solid #9b6cba73;overflow:hidden;margin:0;
+}
+.compact-slot .offline-slot-ico .offline-portrait{min-height:0;height:100%;width:100%}
+.compact-slot .offline-slot-ico .offline-portrait>span{font-size:18px}
+.compact-slot .team-slot-info,.compact-slot .compact-slot-info{flex:1;min-width:0}
+.compact-slot .team-slot-info small,.compact-slot .compact-slot-info small{
+ font-size:9px!important;color:#c4a9ee;line-height:1.1;display:block;
+}
+.compact-slot .team-slot-info b,.compact-slot .compact-slot-info strong{
+ font-size:11px!important;line-height:1.3;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.compact-slot .slot-score{flex:none;font:900 22px/1 'Barlow Condensed',Impact,sans-serif;color:#ff9edb}
+.team-running-total{color:#ff91da}
+.compact-team .offline-team-head{padding:2px 2px 7px;align-items:center}
+.compact-team .offline-team-head b{font-size:12px}
+.compact-team .offline-team-head span{font-size:10px}
+.compact-team .offline-slot:after{display:none}
+
+/* Final: estatísticas/oponentes em lados opostos. */
+body:has(#battle:not([hidden])) .container,
+body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
+#battle .battle-banner,#offline .offline-final{
+ background:linear-gradient(130deg,#311942,#171635 50%,#192940)!important;
+ border-color:#a35de570!important;
+ box-shadow:inset 0 1px 0 #ffffff18;
+}
+#battle .battle-banner h2,#offline .offline-final h2{
+ color:#fff;text-shadow:0 0 18px #f85cbf7b;letter-spacing:.8px;
+}
+#battle .scoreboards b,#offline .offline-score strong{color:#ffc2ef!important;text-shadow:0 0 18px #fa76e144}
+#battle .scoreboards>div:last-child b,#offline .offline-score>div:last-child strong{color:#8cefff!important;text-shadow:0 0 16px #62e5ff44}
+.versus-header{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(92px,132px) minmax(0,1fr);
+ gap:7px;padding:4px 9px;
+ color:#aaddf4;text-transform:uppercase;font-size:10px;font-weight:900;
+ letter-spacing:.6px;
+}
+.versus-header span:nth-child(1){text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.versus-header span:nth-child(2){text-align:center;color:#ff96d3}
+.versus-header span:nth-child(3){text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#battle .battle-rows,.offline-compact-fights{display:grid;gap:6px}
+#battle .battle-row.anime-versus-row,
+#offline .offline-compact-fights .anime-versus-row{
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(92px,132px) minmax(0,1fr)!important;
+ align-items:center;gap:7px!important;
+ padding:6px 8px!important;margin:0!important;
+ min-height:57px!important;
+ border:1px solid #874dba80!important;border-radius:10px;
+ background:linear-gradient(105deg,#2c1747 0%,#18152c 47%,#152845 100%)!important;
+ box-shadow:inset 0 1px 0 #ffffff0b;
+ animation:none!important;
+}
+.anime-versus-row .versus-side{
+ display:flex;align-items:center;min-width:0;gap:7px;
+ border-radius:7px;padding:3px 4px;background:transparent;
+}
+.anime-versus-row .versus-side.left{text-align:left}
+.anime-versus-row .versus-side.right{text-align:right}
+.anime-versus-row .versus-side.win{
+ background:linear-gradient(110deg,#f179d419,#844ff81f);
+ box-shadow:inset 0 0 0 1px #de86eb55;
+}
+.anime-versus-row .versus-side.right.win{background:linear-gradient(100deg,#66d9f71b,#826bfc19)}
+.anime-versus-row .duel-face{
+ flex:0 0 37px;width:37px;height:43px;overflow:hidden;
+ border:1px solid #ba7aeb8e;border-radius:7px;
+ background:#2e2548;display:grid;place-items:center;
+}
+.anime-versus-row .duel-face img.character-img{
+ width:100%;height:100%;object-fit:cover;object-position:center 16%;display:block
+}
+.anime-versus-row .duel-face .offline-portrait{
+ height:100%!important;min-height:0!important;width:100%;font-size:19px;
+}
+.anime-versus-row .duel-face .offline-portrait>span{font-size:19px}
+.anime-versus-row .duel-person{
+ flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ font-size:clamp(10px,1.3vw,13px);font-weight:800;line-height:1.2;
+}
+.anime-versus-row .duel-score{
+ flex:0 0 auto;
+ color:#edb7ff;font:900 clamp(25px,3.6vw,34px)/1 'Barlow Condensed',Impact,sans-serif;
+ text-shadow:0 1px 10px #ff70d64d;
+}
+.anime-versus-row .versus-side.right .duel-score{color:#8ae7ff}
+.anime-versus-row .versus-side.win .duel-score{filter:brightness(1.35)}
+.anime-versus-row .versus-center{text-align:center;min-width:0}
+.anime-versus-row .versus-center small{
+ display:block;letter-spacing:1.1px;color:#aa9cc7;font-size:9px;line-height:1.2;
+}
+.anime-versus-row .versus-center strong{
+ display:block;color:#ffd7f2;font:900 clamp(10px,1.6vw,14px)/1.1 'Barlow Condensed',Impact,sans-serif;
+ text-shadow:0 1px 10px #ab63c46b;
+}
+#offline .offline-compact-fights .offline-fight{height:auto}
+#offline .offline-compact-fights .offline-fight-label,
+#offline .offline-compact-fights .offline-fight-row{display:none}
+#offline .offline-final{margin-bottom:4px}
+#offline .offline-compact-fights{margin-top:4px}
+#offline .offline-actions{justify-content:center}
+@media(max-width:760px){
+ .team-boards,.offline-teams{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .team-board.compact-team,.offline-team.compact-team{padding:5px}
+ .compact-slot{gap:4px!important;padding:4px 2px!important;min-height:38px!important}
+ .compact-slot .mini-avatar,.compact-slot .offline-slot-ico{flex-basis:25px;width:25px;height:28px;min-height:28px}
+ .compact-slot .team-slot-info b,.compact-slot .compact-slot-info strong{font-size:10px!important}
+ .compact-slot .team-slot-info small,.compact-slot .compact-slot-info small{font-size:8px!important}
+ .compact-slot .slot-score{font-size:18px}
+ .versus-header{grid-template-columns:minmax(0,1fr) 81px minmax(0,1fr);padding:3px 5px;font-size:9px}
+ #battle .battle-row.anime-versus-row,#offline .offline-compact-fights .anime-versus-row{
+   grid-template-columns:minmax(0,1fr) 81px minmax(0,1fr)!important;
+   gap:3px!important;min-height:51px!important;padding:4px!important;
+ }
+ .anime-versus-row .versus-side{gap:3px;padding:2px}
+ .anime-versus-row .duel-face{flex-basis:28px;width:28px;height:35px}
+ .anime-versus-row .duel-person{font-size:10px}
+ .anime-versus-row .duel-score{font-size:23px}
+ .anime-versus-row .versus-center strong{font-size:11px}
+ .anime-versus-row .versus-center small{font-size:8px}
+}
+@media(max-width:390px){
+ .versus-header{grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr)}
+ #battle .battle-row.anime-versus-row,#offline .offline-compact-fights .anime-versus-row{
+   grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr)!important;
+ }
+ .anime-versus-row .duel-face{flex-basis:24px;width:24px;height:30px}
+ .anime-versus-row .duel-score{font-size:20px}
+ .anime-versus-row .duel-person{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-card,.hero-vs,.anime-versus-row{animation:none!important}
+}
