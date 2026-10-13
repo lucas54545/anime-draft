@@ -184,7 +184,7 @@ function updateAuctionTimer(){
   const myTurn=r.turn===r.you;
   $('placeBid').disabled=!myTurn || r.bidMode==='avoid' || r.minimum>r.budgets[r.you] || remain<=0;
   $('avoidBid').disabled=!myTurn || r.bidMode==='buy' || !r.canAvoid || Math.abs(r.bidMode==='avoid'?r.minimum:-1)>r.budgets[r.you] || remain<=0;
-  $('passBid').disabled=!myTurn||remain<=0;
+  $('passBid').disabled=!myTurn||r.bidMode==='neutral'||remain<=0;
 }
 function renderArena(){
   show('arena');const r=model.room;if(!r)return;
@@ -206,15 +206,18 @@ function renderArena(){
   $('placementArea').hidden=!isPlace;
   $('reveal').hidden=!isReveal;
   $('currentBid').textContent=r.currentBid;
-  $('bidLeader').textContent=r.leader<0?'Compre (+1), evite (-1) ou aceite grátis.':r.bidMode==='avoid'?r.names[r.leader]+' queimará '+Math.abs(r.currentBid)+' moedas para evitar este personagem.':r.names[r.leader]+' está ganhando por '+r.currentBid+' moedas.';
+  $('bidLeader').textContent=r.leader<0?'Primeiro lance: comprar +1 ou evitar -1.':r.bidMode==='avoid'?r.names[r.leader]+' queimará '+Math.abs(r.currentBid)+' moedas para evitar este personagem.':r.names[r.leader]+' está ganhando por '+r.currentBid+' moedas.';
   $('budgetHint').textContent=myBudget;
   $('bidValue').textContent=r.currentBid;
   $('placeBid').textContent='⚡ COMPRAR +'+(r.bidMode==='neutral'?1:r.minimum);
   $('avoidBid').textContent='🛡️ EVITAR '+(r.bidMode==='neutral'?-1:r.minimum);
   $('placeBid').hidden=r.bidMode==='avoid';
   $('avoidBid').hidden=r.bidMode==='buy'||!r.canAvoid;
-  $('passBid').textContent=r.bidMode==='neutral'?'✅ ACEITAR GRÁTIS':r.bidMode==='avoid'?'✅ ACEITAR PERSONAGEM GRÁTIS':'✋ DESISTIR';
-  $('waitingMessage').textContent=r.names[r.turn]+' tem 10 segundos para responder.';
+  // Pegar grátis só fica disponível após um lance negativo.
+  // Após um lance positivo, a outra opção é desistir (não pegar grátis).
+  $('passBid').hidden=r.bidMode==='neutral';
+  $('passBid').textContent=r.bidMode==='avoid'?'✅ PEGAR GRÁTIS':'✋ DESISTIR';
+  $('waitingMessage').textContent=r.bidMode==='neutral'?r.names[r.turn]+' tem 10 segundos para abrir o leilão.':r.names[r.turn]+' tem 10 segundos para responder ao lance.';
   $('auctionCaption').textContent=r.bidMode==='avoid'?'Lance negativo: quem evitar o personagem perde as moedas no limbo. O outro fica com ele grátis.':r.bidMode==='buy'?'Lance positivo: quem oferecer mais paga e leva o personagem.':'Escolha comprar +1 ou evitar -1. As moedas negativas somem do jogo.';
   clearInterval(auctionClock);auctionClock=null;
   if(isAuction){updateAuctionTimer();auctionClock=setInterval(updateAuctionTimer,125);}
@@ -248,7 +251,7 @@ function avoidBid(){
   if(send('bid',{amount:r.bidMode==='neutral'?-1:r.minimum}))$('avoidBid').disabled=true;
 }
 function giveUpBid(){
-  const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you)return;
+  const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you||r.bidMode==='neutral')return;
   if(send('pass')){$('passBid').disabled=true;}
 }
 function cancelTimers(){clearInterval(auctionClock);auctionClock=null;gameTimers.forEach(t=>clearTimeout(t));gameTimers=[];}
