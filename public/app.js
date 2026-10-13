@@ -78,7 +78,7 @@ function connect(){
   onlineState(false);
   // GitHub Pages serve arquivos estáticos: não oferece WebSocket para partidas online.
   // Mesmo assim, o visitante consegue entrar e jogar todos os modos locais.
-  if(location.protocol==='file:' || /\\.github\\.io$/i.test(location.hostname)){
+  if(location.protocol==='file:' || /\.github\.io$/i.test(location.hostname)){
     $('netLabel').textContent='MODO LOCAL';
     return;
   }
@@ -174,7 +174,7 @@ function renderOnline(){
 function login(){
   const name=$('nickname').value.trim().replace(/\s+/g,' ');
   if(name.length<2||name.length>20){toast('Digite um apelido entre 2 e 20 caracteres.');return;}
-  if(!/^[\\p{L}\\p{N} _.-]+$/u.test(name)){toast('Use letras, números, espaço, ponto ou traço no apelido.');return;}
+  if(!/^[\p{L}\p{N} _.-]+$/u.test(name)){toast('Use letras, números, espaço, ponto ou traço no apelido.');return;}
   model.name=name;saveSession();
   if(!model.connected){
     model.logged=true;renderLobby();renderOnline();show('lobby');
