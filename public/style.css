@@ -1014,3 +1014,20 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
  .sp-bid-actions button{font-size:10px}
  .sp-wallet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* V1.0 — identidade visual da edição de lançamento */
+.v1-launch-spark{
+  display:inline-flex;align-items:center;border:1px solid #ffdb91a3;
+  background:linear-gradient(100deg,#60381b84,#58317290);
+  color:#ffe0a1;border-radius:999px;padding:4px 10px;
+  font-weight:900;font-size:10px;letter-spacing:1px;
+  box-shadow:0 0 15px #ffbb8935;
+}
+.v1-launch-version{
+  background:linear-gradient(100deg,#513d55,#232b53);
+  border:1px solid #d7bd7e9e!important;color:#fbe4b5!important;
+  font-weight:900!important;letter-spacing:.75px;
+}
+.character-img{background:radial-gradient(circle at 40% 26%,#654f9a,#141c37 76%);}
+img.character-img[src^="data:image/svg+xml"]{filter:saturate(.82);}
+@media(max-width:450px){.v1-launch-spark{font-size:9px;padding:3px 6px}.v1-launch-version{font-size:10px;}}
