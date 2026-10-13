@@ -22,7 +22,7 @@ assert.deepEqual(byId.anos.stats,[99,99,99,99,99]);
 assert.deepEqual(byId.rimuru.stats,[99,99,99,99,99]);
 assert.ok(byId.goku.stats.every(n=>n<=90),'Goku não deve ultrapassar 90');
 assert.ok(byId.vegeta.stats.every(n=>n<=90),'Vegeta não deve ultrapassar 90');
-for(const file of ['server.js','public/app.js','public/offline.js','public/characters-local.js']){
+for(const file of ['server.js','public/app.js','public/offline.js','public/special-modes.js','public/characters-local.js']){
   new vm.Script(read(file),{filename:file});
 }
 const server=read('server.js'),app=read('public/app.js'),offline=read('public/offline.js'),html=read('public/index.html');
@@ -48,6 +48,28 @@ assert.ok(app.includes('function renderSquadLobby(')&&app.includes('function joi
 assert.ok(offline.includes("mode==='local2v2'"),'Modo 2v2 local indisponível');
 assert.ok(css.includes('.squad-lobby-columns'),'Design da sala 2v2 indisponível');
 console.log('✓ Modo 2v2 online/local, sala por código, duplas e revanche com quatro votos');
+
+const extraModes=read('public/special-modes.js');
+for(const id of ['localTournamentBtn','localMysteryBtn','localRouletteBtn','ffaBtn','direct5v5Btn','specialContent']){
+  assert.ok(html.includes('id="'+id+'"'),'Botão ou tela V12 ausente: '+id);
+}
+assert.ok(html.includes('special-modes.js?v=12.0'),'Novo script precisa ser carregado');
+assert.ok(app.includes("['lobby','offline','special','arena','battle']"),'Navegação V12 indisponível');
+assert.ok(app.includes('window.imageMarkup=imageMarkup;'),'Os retratos locais devem usar as imagens reais');
+for(const method of ['function tournamentBotDuel(','function tournamentAdvance(','function tournamentBracket(','function rouletteSpin(']){
+  assert.ok(offline.includes(method),'Modo Torneio ou Roleta ausente: '+method);
+}
+assert.ok(offline.includes("st?.mode==='mystery'"),'Identidade precisa ficar oculta antes do leilão misterioso');
+assert.ok(offline.includes("['bot','mystery','roulette','tournament']"),'Modos novos contra BOT precisam funcionar');
+for(const method of ['function ffaNewAuction(','function ffaPlace(','function ffaFinish(','function duelFightStart(','function duelFinish(']){
+  assert.ok(extraModes.includes(method),'Modo independente V12 ausente: '+method);
+}
+const duelScoreBody=extraModes.slice(extraModes.indexOf('function calculateDuel('),extraModes.indexOf('function duelFightStart('));
+assert.ok(!duelScoreBody.includes('.stats['),'O confronto direto 5v5 não pode comparar atributos individuais');
+assert.ok(duelScoreBody.includes('rarity'),'O confronto direto deve usar raridade e sorte');
+assert.ok(read('public/style.css').includes('.direct-clash'),'O confronto direto precisa de interface visual');
+console.log('✓ Cinco modos V12: Torneio, Mistério, Roleta, 4 jogadores FFA e duelo direto 5v5');
+
 
 console.log('✓ Elenco: 142 personagens / 38 animes');
 console.log('✓ Balanço, raridades secretas, histórico, revanche, limbo e interface');
