@@ -371,4 +371,5 @@ $('localSquadBtn').addEventListener('click',()=>start('local2v2'));
 $('localMysteryBtn').addEventListener('click',()=>start('mystery'));
 $('localRouletteBtn').addEventListener('click',()=>start('roulette'));
 $('localTournamentBtn').addEventListener('click',()=>start('tournament'));
+$('direct5v5Btn').addEventListener('click',()=>start('direct5v5'));
 })();
