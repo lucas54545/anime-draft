@@ -18,10 +18,31 @@ for(const character of chars){
   assert.equal(character.rarity,rarity(character.rating));
 }
 const byId=Object.fromEntries(chars.map(c=>[c.id,c]));
-assert.deepEqual(byId.anos.stats,[99,99,99,99,99]);
-assert.deepEqual(byId.rimuru.stats,[99,99,99,99,99]);
-assert.ok(byId.goku.stats.every(n=>n<=90),'Goku não deve ultrapassar 90');
-assert.ok(byId.vegeta.stats.every(n=>n<=90),'Vegeta não deve ultrapassar 90');
+// Balanceamento V1: escalas entre universos e perfis de atributos individuais.
+assert.deepEqual(byId.anos.stats,[99,99,98,99,99]);
+assert.deepEqual(byId.rimuru.stats,[99,98,99,99,99]);
+assert.ok(byId.goku.rating>byId.meliodas.rating,'Goku deve superar Meliodas em poder geral');
+assert.ok(byId.vegeta.rating>byId.meliodas.rating,'Vegeta deve superar Meliodas em poder geral');
+assert.equal(byId.goku.rating,97);
+assert.equal(byId.vegeta.rating,97);
+assert.equal(byId.meliodas.rating,92);
+assert.ok(byId.piccolo.rating>byId.tanjiro.rating,'Piccolo deve estar acima de espadachins humanos');
+assert.ok(byId.yamcha.rating>byId.tanjiro.rating,'Yamcha acompanha a escala de Dragon Ball');
+assert.ok(byId.gohan.rating>=byId.piccolo.rating,'Gohan não deve ficar atrás de Piccolo');
+assert.ok(byId.ryuk.stats[1]>byId.light.stats[1],'Ryuk deve ter mais resistência sobrenatural que Light');
+assert.ok(byId.light.stats[2]>byId.goku.stats[2],'Light se destaca pelo QI');
+assert.ok(byId.kobeni.stats[4]>byId.kobeni.stats[0],'Kobeni se destaca por reflexos e não força bruta');
+assert.ok(byId.zenitsu.stats[4]>byId.zenitsu.stats[0],'Zenitsu deve se destacar por velocidade');
+assert.ok(byId.senku.stats[2]>byId.senku.stats[0],'Senku deve se destacar por inteligência');
+assert.ok(byId.nami.stats[2]>byId.nami.stats[0],'Nami deve se destacar por estratégia');
+assert.ok(chars.every(c=>new Set(c.stats).size>=2),
+  'Todos os personagens devem ter atributos diferentes entre si, conforme suas habilidades no anime');
+assert.ok(chars.every(c=>c.stats.every(n=>Number.isInteger(n)&&n>=8&&n<=99)),
+  'Manter cada atributo na escala de 8 a 99');
+const powers=chars.map(c=>c.stats.reduce((sum,attribute)=>sum+attribute,0));
+assert.ok(new Set(powers).size>65,'O elenco precisa de variedade real no poder total do 5v5');
+assert.ok(byId.vegeta.stats.reduce((a,b)=>a+b,0)>byId.meliodas.stats.reduce((a,b)=>a+b,0),
+  'O poder total 5v5 de Vegeta precisa superar Meliodas');
 for(const file of ['server.js','special-server.js','public/portrait-loader.js','public/app.js','public/offline.js','public/special-modes.js','public/special-online.js','public/characters-local.js']){
   new vm.Script(read(file),{filename:file});
 }
