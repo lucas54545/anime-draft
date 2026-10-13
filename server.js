@@ -33,109 +33,121 @@ function presence() { const payload={type:'presence',players:whoOnline()}; for (
 function syncRoom(room) { for (let i=0;i<2;i++) issue(room.players[i], roomView(room,i)); }
 function roomView(room, idx) {
   return {
-    type:'room', roomId:room.id, mode:room.mode, phase:room.phase, round:room.round,
-    attribute: ATTRS[room.round] || '',
-    names:room.players.map((u,i)=>u?.name || (i===1?'BOT':'Jogador')),
-    you:idx, budgets:room.budgets,
+    type:'room',roomId:room.id,mode:room.mode,phase:room.phase,round:room.round,
+    names:room.players.map((u,i)=>u?.name||(i===1?'BOT':'Jogador')),
+    you:idx,budgets:room.budgets,
     teams:room.teams.map(t=>t.map(c=>c?acquiredFighter(CHAR[c]):null)),
     offered:room.offer.map(c=>publicFighter(CHAR[c])),
-    currentBid:room.currentBid, leader:room.leader, turn:room.turn, deadline:room.deadline,
-    minimum:room.currentBid+1, result:room.result || null
+    currentBid:room.currentBid,leader:room.leader,turn:room.turn,deadline:room.deadline,
+    minimum:room.currentBid+1,placer:room.placer,
+    pending:room.pending?publicFighter(CHAR[room.pending]):null,
+    result:room.result||null
   };
 }
-function chooseOffer(room) {
+const countTeam=(room,side)=>room.teams[side].filter(Boolean).length;
+const canBuy=(room,side)=>countTeam(room,side)<5;
+const freeSlots=(room,side)=>room.teams[side].map((id,i)=>id===null?i:-1).filter(i=>i>=0);
+function chooseOffer(room){
+  clearTimeout(room.timer);clearTimeout(room.botTimer);
   const used=new Set(room.teams.flat().filter(Boolean));
   const available=ROSTER.filter(x=>!used.has(x.id));
+  if(!available.length){finishBattle(room);return;}
   const random=arr=>arr[Math.floor(Math.random()*arr.length)];
   let primary=random(available);
-  if(Math.random()<.27) {
+  if(Math.random()<.27){
     const weak=available.filter(x=>x.stats.reduce((a,b)=>a+b,0)<290);
     if(weak.length)primary=random(weak);
   }
-  const backup=random(available.filter(x=>x.id!==primary.id));
-  room.offer=[primary.id,backup.id];
-  room.currentBid=0;
-  room.leader=-1;
-  room.turn=room.round%2;
+  room.offer=[primary.id];
+  room.currentBid=0;room.leader=-1;
+  room.turn=canBuy(room,room.round%2)?room.round%2:1-room.round%2;
   room.deadline=Date.now()+10000;
-  room.phase='auction';room.result=null;
+  room.phase='auction';room.result=null;room.pending=null;room.placer=-1;
   scheduleTurn(room);
 }
-function makeRoom(p1,p2,mode) {
+function makeRoom(p1,p2,mode){
   const room={id:id(),players:[p1,p2],mode,round:0,phase:'auction',budgets:[20,20],
-    teams:[[],[]],offer:[],currentBid:0,leader:-1,turn:0,deadline:0,result:null,timer:null,botTimer:null};
-  rooms.set(room.id,room);
-  p1.roomId=room.id;if(p2)p2.roomId=room.id;
-  chooseOffer(room);syncRoom(room);presence();
-  return room;
+    teams:[Array(5).fill(null),Array(5).fill(null)],offer:[],currentBid:0,leader:-1,turn:0,deadline:0,
+    result:null,timer:null,botTimer:null,placer:-1,pending:null,pendingPrice:0,pendingReason:''};
+  rooms.set(room.id,room);p1.roomId=room.id;if(p2)p2.roomId=room.id;
+  chooseOffer(room);syncRoom(room);presence();return room;
 }
-// At every new bid, the OTHER player gets exactly ten seconds to raise or pass.
-function scheduleTurn(room) {
+function scheduleTurn(room){
   clearTimeout(room.timer);clearTimeout(room.botTimer);
   if(room.phase!=='auction')return;
-  const expectedRound=room.round, expectedBid=room.currentBid;
-  const wait=Math.max(1,room.deadline-Date.now());
+  const expectedRound=room.round,expectedBid=room.currentBid;
   room.timer=setTimeout(()=>{
     if(!rooms.has(room.id)||room.phase!=='auction'||room.round!==expectedRound||room.currentBid!==expectedBid)return;
     concludeAuction(room,'tempo esgotado');
-  },wait+35);
-  if(room.mode==='bot' && room.turn===1) {
+  },Math.max(1,room.deadline-Date.now())+30);
+  if(room.mode==='bot'&&room.turn===1){
     room.botTimer=setTimeout(()=>{
       if(!rooms.has(room.id)||room.phase!=='auction'||room.turn!==1)return;
-      const fighter=CHAR[room.offer[0]];
-      const preferred=Math.max(1,Math.min(8,Math.round(fighter.stats[room.round]/16 + (Math.random()*3-1.5))));
-      if(room.currentBid+1<=room.budgets[1] && room.currentBid+1<=preferred && Math.random()<.83)raiseBid(room,1,room.currentBid+1);
+      const desired=1+Math.floor(Math.random()*6);
+      if(room.currentBid+1<=room.budgets[1]&&room.currentBid+1<=desired&&Math.random()<.80)raiseBid(room,1,room.currentBid+1);
       else concludeAuction(room,'bot desistiu');
-    },800+Math.floor(Math.random()*1600));
+    },650+Math.floor(Math.random()*1400));
   }
 }
-function raiseBid(room,side,amount) {
-  if(room.phase!=='auction'||room.turn!==side)return false;
+function raiseBid(room,side,amount){
+  if(room.phase!=='auction'||room.turn!==side||!canBuy(room,side))return false;
   const needed=room.currentBid+1;
-  if(!Number.isInteger(amount)||amount!==needed||needed>room.budgets[side])return false;
-  room.currentBid=amount;room.leader=side;room.turn=1-side;
-  room.deadline=Date.now()+10000;
-  // If the new challenger can't afford the next bid, finish instantly.
-  if(room.budgets[room.turn]<room.currentBid+1){concludeAuction(room,'sem moedas para cobrir');return true;}
+  if(!Number.isInteger(amount)||amount!==needed||needed>room.budgets[side]||Date.now()>room.deadline)return false;
+  room.currentBid=amount;room.leader=side;room.turn=1-side;room.deadline=Date.now()+10000;
+  if(!canBuy(room,room.turn)||room.budgets[room.turn]<room.currentBid+1){concludeAuction(room,'adversário não pode cobrir');return true;}
   scheduleTurn(room);syncRoom(room);return true;
 }
-function concludeAuction(room,reason) {
+function concludeAuction(room,reason){
   if(room.phase!=='auction')return;
   clearTimeout(room.timer);clearTimeout(room.botTimer);
-  room.phase='reveal';room.deadline=0;
-  // With no initial offer, the starting player receives the featured fighter free.
-  const winner=room.leader<0?(room.round%2):room.leader;
-  const loser=1-winner;
-  const price=room.leader<0?0:room.currentBid;
-  room.budgets[winner]-=price;
-  room.teams[winner].push(room.offer[0]);
-  room.teams[loser].push(room.offer[1]);
-  room.result={winner,price,reason,offers:room.offer.map(x=>acquiredFighter(CHAR[x]))};
-  syncRoom(room);
+  let winner;
+  if(room.leader>=0)winner=room.leader;
+  else if(!canBuy(room,room.turn))winner=1-room.turn;
+  else if(reason==='jogador desistiu'||reason==='bot desistiu')winner=canBuy(room,1-room.turn)?1-room.turn:room.turn;
+  else winner=room.turn;
+  if(!canBuy(room,winner))winner=1-winner;
+  room.phase='place';room.deadline=0;room.placer=winner;
+  room.pending=room.offer[0];room.pendingPrice=room.leader<0?0:room.currentBid;room.pendingReason=reason;
+  room.budgets[winner]-=room.pendingPrice;syncRoom(room);
+  if(room.mode==='bot'&&winner===1){
+    room.botTimer=setTimeout(()=>{
+      if(!rooms.has(room.id)||room.phase!=='place'||room.placer!==1)return;
+      const slots=freeSlots(room,1);
+      if(slots.length)placeCharacter(room,1,slots[Math.floor(Math.random()*slots.length)]);
+    },900);
+  }
+}
+function placeCharacter(room,side,slot){
+  if(room.phase!=='place'||side!==room.placer||!Number.isInteger(slot)||slot<0||slot>=5||room.teams[side][slot]!==null)return false;
+  room.teams[side][slot]=room.pending;
+  room.phase='reveal';room.result={winner:side,price:room.pendingPrice,reason:room.pendingReason,
+    fighter:acquiredFighter(CHAR[room.pending]),slot};
+  room.pending=null;room.placer=-1;syncRoom(room);
   room.timer=setTimeout(()=>{
     if(!rooms.has(room.id)||room.phase!=='reveal')return;
     room.round++;
-    if(room.round<5){chooseOffer(room);syncRoom(room);}
+    if(room.round<10){chooseOffer(room);syncRoom(room);}
     else finishBattle(room);
-  },Number(process.env.ROUND_DELAY_MS||3700));
+  },Number(process.env.ROUND_DELAY_MS||3500));
+  return true;
 }
-function finishBattle(room) {
+function finishBattle(room){
   room.phase='battle';
-  const scores=[0,0], details=[];
+  const scores=[0,0],details=[];
   for(let i=0;i<5;i++){
     const p0=CHAR[room.teams[0][i]],p1=CHAR[room.teams[1][i]];
-    let s0=p0.stats[i],s1=p1.stats[i];
+    if(!p0||!p1)throw new Error('Time incompleto após 10 leilões.');
+    const s0=p0.stats[i],s1=p1.stats[i];
     const winner=s0===s1?-1:s0>s1?0:1;
     if(winner>=0)scores[winner]++;
     details.push({attribute:ATTRS[i],fighters:[{...publicFighter(p0),value:s0},{...publicFighter(p1),value:s1}],winner});
   }
   const totals=[0,1].map(side=>room.teams[side].reduce((sum,c,i)=>sum+CHAR[c].stats[i],0));
-  // O vencedor e definido pelo total dos cinco atributos, NAO pelo numero de categorias ganhas.
   const winner=totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1;
-  const payload={type:'battle',victoryRule:'total',names:[room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'],scores,totals,winner,details,budgets:room.budgets,roomId:room.id, startAt:Date.now()+1400};
-  for (const u of room.players) issue(u,payload);
-  room.battle=payload;
-  presence();
+  const payload={type:'battle',victoryRule:'total',names:[room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'],
+    scores,totals,winner,details,budgets:room.budgets,roomId:room.id,startAt:Date.now()+1400};
+  for(const u of room.players)issue(u,payload);
+  room.battle=payload;presence();
 }
 function cleanRoom(room) {
   if (!room) return;
@@ -208,15 +220,84 @@ function message(ws, data) {
     if(idx!==room.turn)return error(ws,'Ainda não é sua vez.');
     concludeAuction(room,'jogador desistiu');return;
   }
+  if(kind==='place'){
+    const room=rooms.get(user.roomId);
+    const idx=room?.players.findIndex(p=>p?.token===user.token);
+    if(!room||idx<0||!placeCharacter(room,idx,Number(data.slot)))return error(ws,'Escolha uma posição livre do seu time.');
+    return;
+  }
   if(kind==='leave'){
     const room=rooms.get(user.roomId);if(room)cleanRoom(room);
     return;
   }
 }
 
+// Retratos carregados pelo servidor; fontes externas sujeitas à disponibilidade.
+const portraitCache=new Map(),portraitPending=new Map();
+let lastPhotoLookup=0;
+const pictureWords=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
+function pictureMatch(name,target){
+  const a=pictureWords(name),b=pictureWords(target);
+  return b.length?b.filter(x=>a.includes(x)).length/b.length:0;
+}
+async function pacedPhotoRequest(url,options){
+  const delay=Math.max(0,520-(Date.now()-lastPhotoLookup));lastPhotoLookup=Date.now()+delay;
+  if(delay)await new Promise(done=>setTimeout(done,delay));
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),9500);
+  try{return await fetch(url,{...options,signal:controller.signal,headers:{'User-Agent':'AnimeDraftBattle/6.0 (fan game)',...(options?.headers||{})}});}
+  finally{clearTimeout(timeout);}
+}
+async function searchPortrait(person){
+  const q=encodeURIComponent(person.name);
+  try{
+    const res=await pacedPhotoRequest('https://api.jikan.moe/v4/characters?q='+q+'&limit=20');
+    if(res.ok){
+      const json=await res.json(),items=json.data||[];
+      const ranked=items.map(x=>({x,score:pictureMatch(x.name,person.name)})).sort((a,b)=>b.score-a.score);
+      const best=ranked[0];
+      if(best?.score>=.50){const link=best.x.images?.jpg?.image_url||best.x.images?.webp?.image_url;if(link)return link;}
+    }
+  }catch(e){console.log('Jikan portrait:',e.message);}
+  try{
+    const res=await pacedPhotoRequest('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:'query ($search: String) { Character(search: $search) { name { full native } image { large } } }',variables:{search:person.name}})});
+    if(res.ok){const json=await res.json(),c=json.data?.Character;if(c&&pictureMatch(c.name?.full,person.name)>=.5)return c.image?.large;}
+  }catch(e){console.log('AniList portrait:',e.message);}
+  return null;
+}
+async function portraitBytes(character){
+  const url=await searchPortrait(character);
+  if(!url||!/^https:\/\//.test(url))return null;
+  try{
+    const response=await pacedPhotoRequest(url);
+    if(!response.ok)return null;
+    const mime=response.headers.get('content-type')||'';
+    if(!mime.startsWith('image/'))return null;
+    const buffer=Buffer.from(await response.arrayBuffer());
+    if(buffer.length>2500000||!buffer.length)return null;
+    return {buffer,mime};
+  }catch(e){console.log('Photo load:',e.message);return null;}
+}
+function servePortrait(req,res,person){
+  if(!person){res.writeHead(404);res.end();return;}
+  const cached=portraitCache.get(person.id);
+  if(cached&&Date.now()-cached.time<3600000){
+    if(cached.data){res.writeHead(200,{'Content-Type':cached.data.mime,'Cache-Control':'public,max-age=86400'});res.end(cached.data.buffer);}
+    else{res.writeHead(404,{'Cache-Control':'public,max-age=90'});res.end();}
+    return;
+  }
+  let work=portraitPending.get(person.id);
+  if(!work){work=portraitBytes(person).then(data=>{portraitCache.set(person.id,{data,time:Date.now()});return data;}).finally(()=>portraitPending.delete(person.id));portraitPending.set(person.id,work);}
+  work.then(data=>{
+    if(res.destroyed)return;
+    if(data){res.writeHead(200,{'Content-Type':data.mime,'Cache-Control':'public,max-age=86400'});res.end(data.buffer);}
+    else{res.writeHead(404,{'Cache-Control':'public,max-age=90'});res.end();}
+  }).catch(()=>{if(!res.destroyed){res.writeHead(502);res.end();}});
+}
+
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};
 const server=http.createServer((req,res)=>{
   const pathname = new URL(req.url,'http://localhost').pathname;
+  if(pathname.startsWith('/api/portrait/')) {servePortrait(req,res,CHAR[pathname.slice('/api/portrait/'.length)]);return;}
   if(pathname==='/api/characters') {res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'public,max-age=3600'});res.end(JSON.stringify(ROSTER.map(publicFighter)));return;}
   if(pathname==='/health') {res.writeHead(200,{'Content-Type':'text/plain'});res.end('ok');return;}
   const file=pathname==='/'?'index.html':pathname.slice(1);
