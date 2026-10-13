@@ -108,3 +108,80 @@
 .one-reveal{grid-template-columns:minmax(0,330px);justify-content:center}
 .offline-progress{display:flex;gap:4px}.offline-progress span{min-width:0;flex:1}
 @media(max-width:580px){.placement-options{grid-template-columns:1fr}.single-auction .character-art{height:230px}.single-auction .offline-card-art{height:225px}.single-auction .character-info h4{font-size:27px}}
+
+/* Anime Draft V7.1 - lances positivos/negativos e batalha compacta */
+.btn-danger{background:#4c2437!important;border:1px solid #ff8196!important;color:#ffe5e9!important;font-weight:900}
+.btn-danger:hover:not(:disabled){background:#743146!important}
+.auction-buttons:has(#avoidBid),.offline-bidbox .auction-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.auction-buttons .btn{min-width:0;padding:11px 7px;font-size:11px;white-space:normal}
+.character-art img.character-img,.offline-portrait img.character-img{display:block;object-fit:cover;object-position:50% 12%}
+.character-art .character-img{z-index:1}
+.single-auction .offline-card-art .offline-portrait>img{width:100%;height:100%}
+body:has(#battle:not([hidden])) .content-layout,
+body:has(#offline:not([hidden]) .offline-final) .content-layout{display:block;max-width:950px;margin:auto;padding:0}
+body:has(#battle:not([hidden])) .right-rail,
+body:has(#offline:not([hidden]) .offline-final) .right-rail,
+body:has(#battle:not([hidden])) .panel-heading,
+body:has(#offline:not([hidden]) .offline-final) .panel-heading,
+body:has(#battle:not([hidden])) footer,
+body:has(#offline:not([hidden]) .offline-final) footer{display:none}
+body:has(#battle:not([hidden])) .topbar,
+body:has(#offline:not([hidden]) .offline-final) .topbar{height:53px}
+body:has(#battle:not([hidden])),body:has(#offline:not([hidden]) .offline-final){overflow-x:hidden}
+#battle,#offline:has(.offline-final){padding:8px 12px 10px}
+#battle .battle-banner{padding:8px 12px}
+#battle .battle-kicker,#battle .battle-glow{display:none}
+#battle .battle-banner h2{font:900 clamp(22px,3.1vw,32px)/1 'Barlow Condensed',Impact,sans-serif;margin:2px 0}
+#battle .battle-banner p{font-size:10px;margin:1px 0 0}
+#battle .scoreboards{margin-top:4px;padding:0 12px;align-items:center}
+#battle .scoreboards b{font:900 clamp(28px,4.5vw,47px)/1 'Barlow Condensed',Impact,sans-serif}
+#battle .scoreboards small{font-size:10px}
+#battle .scoreboards span{font-size:9px}
+#battle .battle-rows{display:grid;gap:4px;margin-top:6px}
+#battle .battle-row{display:grid;grid-template-columns:minmax(95px,132px) minmax(0,1fr);align-items:center;gap:6px;padding:5px 7px;min-height:52px;animation:none}
+#battle .battle-row h3{font-size:12px;text-align:left;margin:0;line-height:1.1}
+#battle .duel-grid{gap:5px}
+#battle .duelist{gap:6px;overflow:hidden;min-width:0}
+#battle .duelist .mini-avatar{width:34px;height:36px;min-width:34px}
+#battle .duelist small{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#battle .duelist strong{font-size:11px}
+#battle .duelist .power-bar{margin-top:3px;height:3px}
+#battle .action-grid{display:flex;justify-content:center;gap:8px;margin:8px 0 0}
+#battle .action-grid .btn{padding:9px 12px;font-size:11px;min-width:0}
+#offline .offline-final{padding:9px 10px}
+#offline .offline-final>h2{font-size:clamp(22px,3.1vw,33px);margin:2px 0}
+#offline .offline-score strong{font-size:clamp(29px,5vw,45px)}
+#offline .offline-score small,#offline .offline-score span{font-size:10px}
+#offline .offline-final+.offline-desc{font-size:10px;margin:4px 0}
+#offline .offline-final~.offline-subtitle{margin:6px 0;font-size:10px}
+#offline .offline-fight{padding:4px 8px;margin:4px 0}
+#offline .offline-fight-label{font-size:10px;margin:0 0 3px}
+#offline .offline-fight-row{gap:5px;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr)}
+#offline .offline-fight-row>div{padding:4px;display:grid;grid-template-columns:37px minmax(0,1fr) auto;align-items:center;gap:5px}
+#offline .offline-fight-row .fight-portrait{height:40px;width:35px;margin:0}
+#offline .offline-fight-row .duel-name{font-size:10px}
+#offline .offline-fight-row strong{font-size:20px}
+#offline .offline-fight-row .power-bar{display:none}
+#offline .offline-actions{margin:8px 0 0}
+@media(max-width:700px){
+  .auction-buttons:has(#avoidBid),.offline-bidbox .auction-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .auction-buttons .btn:last-child{grid-column:1/-1}
+  #battle .battle-row{grid-template-columns:78px minmax(0,1fr);min-height:47px;gap:4px;padding:3px 5px}
+  #battle .battle-row h3{text-align:left;font-size:10px}
+  #battle .duel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+  #battle .duelist{gap:3px}
+  #battle .duelist .mini-avatar{width:25px;height:28px;min-width:25px}
+  #battle .duelist small{font-size:9px}
+  #battle .duelist strong{font-size:10px}
+  #battle .battle-banner h2{font-size:23px}
+  #offline .offline-fight-row>div{grid-template-columns:29px minmax(0,1fr) auto;gap:3px}
+  #offline .offline-fight-row .fight-portrait{width:28px;height:32px}
+  #offline .offline-fight-row .duel-name{font-size:10px}
+  #offline .offline-fight-row strong{font-size:17px}
+}
+@media(max-height:740px){
+  body:has(#battle:not([hidden])) .topbar,body:has(#offline:not([hidden]) .offline-final) .topbar{height:43px}
+  #battle .battle-row{min-height:41px;padding:3px 5px}
+  #battle .duelist .mini-avatar{width:25px;height:26px;min-width:25px}
+  #offline .offline-fight{padding:3px 5px;margin:3px 0}
+}
