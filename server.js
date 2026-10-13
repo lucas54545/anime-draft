@@ -219,7 +219,7 @@ function generateSquadCode(){
   throw new Error('Não foi possível gerar código da sala.');
 }
 function lobbyPayload(lobby){
-  return {type:'squad_lobby',code:lobby.code,owner:lobby.host,
+  return {type:'squad_lobby',code:lobby.code,owner:users.get(lobby.host)?.name||'Jogador',
     members:lobby.members.map(m=>({name:users.get(m.token)?.name||'Jogador',side:m.side})),
     count:lobby.members.length,required:4};
 }
