@@ -112,15 +112,32 @@ function playMatch(ctx,match,starting=0){
   assert.ok(ctx.messages.some(x=>x.type==='special_result'&&x.battle.totals.length===4));
 }
 {
-  const ctx=createPlayers('direct',2),game=ctx.game;
-  for(let i=0;i<10;i++)ctx.action(i%2,'special_pick',{id:roster[i].id});
-  assert.equal(game.direct.phase,'duel');
-  assert.equal(game.direct.bouts.length,5);
-  assert.ok(game.direct.bouts.every(b=>b.fighters.every(p=>p.stats===undefined)),'5v5 não compara atributos');
-  for(let i=0;i<5;i++)tick(game.direct.timer);
-  assert.equal(game.direct.phase,'complete');
-  assert.equal(game.direct.scores[0]+game.direct.scores[1],5);
-  assert.ok(ctx.messages.some(x=>x.type==='special_result'));
+  const ctx=createPlayers('direct',2),game=ctx.game,match=game.matches[0];
+  assert.equal(game.direct,null,'5v5 deve usar leilão e não seleção livre');
+  assert.equal(match.max,10,'5v5 deve ter dez leilões');
+  assert.deepEqual(Array.from(match.budgets),[50,50],'Cada jogador começa com cinquenta moedas');
+  const firstState=ctx.messages.find(x=>x.type==='special_state');
+  assert.equal(firstState.budgets[0],50);
+  assert.equal(firstState.budgets[1],50);
+  assert.ok(firstState.current,'Personagem deve aparecer no leilão');
+  assert.equal(firstState.current.stats,undefined,'Poder deve ficar oculto até escolher posição');
+  const invalid=ctx.api.handle(ctx.players[0],{type:'special_pick',id:roster[0].id});
+  assert.ok(invalid?.error,'Escolha livre deve ser bloqueada no 5v5 com leilão');
+  playMatch(ctx,match);
+  const battle=match.battle;
+  assert.ok(battle,'Resultado 5v5 ausente');
+  assert.equal(battle.details.length,5,'Cada equipe deve comparar cinco personagens');
+  assert.equal(battle.history.length,10,'Histórico deve registrar dez leilões');
+  assert.ok(battle.rule.includes('Soma'),'A pontuação deve usar a soma total');
+  for(let side=0;side<2;side++){
+    const expected=match.teams[side].reduce((total,id)=>total+
+      roster.find(c=>c.id===id).stats.reduce((sum,value)=>sum+value,0),0);
+    assert.equal(battle.totals[side],expected,'Poder total precisa somar os cinco atributos dos cinco personagens');
+  }
+  const expectedWinner=battle.totals[0]===battle.totals[1]?-1:battle.totals[0]>battle.totals[1]?0:1;
+  assert.equal(battle.winner,expectedWinner,'Vence apenas o time com maior poder total');
+  ctx.action(0,'special_replay');ctx.action(1,'special_replay');
+  assert.deepEqual(Array.from(game.matches[0].budgets),[50,50],'A revanche 5v5 reinicia com 50 moedas');
 }
 {
   const ctx=createPlayers('tournament',8),game=ctx.game;
@@ -137,4 +154,4 @@ function playMatch(ctx,match,starting=0){
   assert.equal(game.stage,0);
   assert.equal(game.matches.length,4);
 }
-console.log('✓ Cinco modos multiplayer V13 simulados: 10, 10, 20 leilões, 5 duelos e torneio 8 jogadores');
+console.log('✓ Cinco modos multiplayer V13 simulados: 10, 10, 20, 10 leilões (5v5 com 50 moedas e soma geral) e torneio 8 jogadores');
