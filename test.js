@@ -70,6 +70,15 @@ assert.ok(duelScoreBody.includes('rarity'),'O confronto direto deve usar raridad
 assert.ok(read('public/style.css').includes('.direct-clash'),'O confronto direto precisa de interface visual');
 console.log('✓ Cinco modos V12: Torneio, Mistério, Roleta, 4 jogadores FFA e duelo direto 5v5');
 
+assert.ok(html.includes('id="arenaConnectionNotice"'),'Aviso de entrada local precisa existir');
+assert.ok(app.includes("$('loginBtn').disabled=false;"),'Botão de entrar não deve ficar bloqueado sem WebSocket');
+assert.ok(app.includes("!model.connected"),'Login local deve funcionar quando multiplayer cair');
+assert.ok(app.includes("/\.github\.io$/i"),'GitHub Pages deve abrir o modo local sem erro de conexão');
+assert.ok(app.includes("$('localBotBtn').click();"),'Treino contra bot precisa ter fallback offline');
+assert.ok(html.includes('./app.js?v=12.1'),'Browser deve atualizar automaticamente o script corrigido');
+console.log('✓ Arena V12.1: login sem WebSocket e jogo local liberado');
+
+
 
 console.log('✓ Elenco: 142 personagens / 38 animes');
 console.log('✓ Balanço, raridades secretas, histórico, revanche, limbo e interface');
