@@ -73,13 +73,26 @@ function makeRoom(p1,p2,mode){
   rooms.set(room.id,room);p1.roomId=room.id;if(p2)p2.roomId=room.id;
   chooseOffer(room);syncRoom(room);presence();return room;
 }
+// Sem lance inicial não existe "pegar grátis": o cronômetro apenas passa a vez.
+function expireAuctionTurn(room){
+  if(!rooms.has(room.id)||room.phase!=='auction')return;
+  if(room.bidMode!==null){concludeAuction(room,'tempo esgotado');return;}
+  const other=1-room.turn;
+  if(canBuy(room,other)&&room.budgets[other]>=1)room.turn=other;
+  else if(!(canBuy(room,room.turn)&&room.budgets[room.turn]>=1)){
+    // Exceção necessária: ninguém tem moedas ou vaga para iniciar o leilão.
+    concludeAuction(room,'nenhum lance possível');return;
+  }
+  room.deadline=Date.now()+10000;
+  scheduleTurn(room);syncRoom(room);
+}
 function scheduleTurn(room){
   clearTimeout(room.timer);clearTimeout(room.botTimer);
   if(room.phase!=='auction')return;
   const expectedRound=room.round,expectedBid=room.currentBid;
   room.timer=setTimeout(()=>{
     if(!rooms.has(room.id)||room.phase!=='auction'||room.round!==expectedRound||room.currentBid!==expectedBid)return;
-    concludeAuction(room,'tempo esgotado');
+    expireAuctionTurn(room);
   },Math.max(1,room.deadline-Date.now())+30);
   if(room.mode==='bot'&&room.turn===1){
     room.botTimer=setTimeout(()=>{
@@ -91,6 +104,7 @@ function scheduleTurn(room){
       else if(room.bidMode===null&&room.budgets[1]>=1)raiseBid(room,1,1);
       else if(room.bidMode==='avoid'&&-next<=room.budgets[1]&&-next<=desired&&Math.random()<.65)raiseBid(room,1,next);
       else if(room.bidMode!=='avoid'&&next<=room.budgets[1]&&next<=desired&&Math.random()<.78)raiseBid(room,1,next);
+      else if(room.bidMode===null)expireAuctionTurn(room);
       else concludeAuction(room,'bot aceitou o lance');
     },650+Math.floor(Math.random()*1400));
   }
@@ -221,7 +235,7 @@ function message(ws, data) {
     if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
     const idx=room.players.findIndex(p=>p?.token===user.token);
     if(idx<0||idx!==room.turn)return error(ws,'Espere a sua vez de dar o lance.');
-    if(Date.now()>room.deadline){concludeAuction(room,'tempo esgotado');return error(ws,'Os 10 segundos acabaram.');}
+    if(Date.now()>room.deadline){expireAuctionTurn(room);return error(ws,'Os 10 segundos acabaram.');}
     const amount=Number(data.amount);
     if(!raiseBid(room,idx,amount))return error(ws,'Lance inválido. Confira a modalidade e seu saldo.');
     return;
@@ -233,7 +247,7 @@ function message(ws, data) {
     if(idx!==room.turn)return error(ws,'Ainda não é sua vez.');
     // Não é possível pegar grátis/desistir antes de o primeiro lance ser dado.
     if(room.bidMode===null||room.leader<0)return error(ws,'O leilão precisa de pelo menos um lance antes de aceitar ou desistir.');
-    if(Date.now()>room.deadline){concludeAuction(room,'tempo esgotado');return;}
+    if(Date.now()>room.deadline){expireAuctionTurn(room);return;}
     concludeAuction(room,room.bidMode==='avoid'?'jogador aceitou o personagem gratuitamente':'jogador desistiu de cobrir');return;
   }
   if(kind==='place'){
