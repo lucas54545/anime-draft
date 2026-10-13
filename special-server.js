@@ -13,7 +13,6 @@ const codeAlphabet='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 function createSpecialMultiplayer({users,roster,issue,presence}){
   const characters=new Map(roster.map(c=>[c.id,c]));
   const lobbies=new Map(),games=new Map();
-  const chosen=[]; // usado apenas para estatísticas internas dos testes
   const token=()=>crypto.randomBytes(10).toString('hex');
   function genCode(){
     for(let i=0;i<50;i++){
@@ -90,7 +89,10 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
       emitPresence();
     }
   }
-  function stopGame(game){for(const m of game.matches){clearTimeout(m.timer);m.timer=null;}}
+  function stopGame(game){
+    for(const m of game.matches){clearTimeout(m.timer);m.timer=null;}
+    if(game.direct){clearTimeout(game.direct.timer);game.direct.timer=null;}
+  }
   function onDisconnect(user){
     // A sessão e os jogos ficam preservados para reconexão pelo mesmo token.
     // Os timers do servidor continuam garantindo o andamento das rodadas.
@@ -235,7 +237,8 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
     if(m.lead>=0){finishAuction(game,m);return;}
     const remaining=m.players.map((_,i)=>i).filter(i=>validForTurn(m,i));
     if(!remaining.length){
-      m.placer=m.players.map((_,i)=>i).filter(i=>openSlots(m,i).length)[m.round%m.players.length]??-1;
+      const remaining=m.players.map((_,i)=>i).filter(i=>openSlots(m,i).length);
+      m.placer=remaining[m.round%remaining.length]??-1;
       if(m.placer<0){finishMatch(game,m);return;}
       m.phase='place';m.deadline=Date.now()+16000;publishGame(game);scheduleMatch(game,m);return;
     }
@@ -328,7 +331,7 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
       target.winner=m.battle.winnerName;target.status='finalizado';target.winnerToken=m.players[champion];
       notifyMany(m.players,{type:'special_result',mode:game.mode,code:game.code,battle:m.battle,
         stage:game.stage,bracket:bracketView(game),waiting:true});
-      sendSpectators(game);
+      // Não esconder o resultado de quem acabou de jogar com uma tela de espera imediata.
       if(game.matches.every(x=>x.phase==='complete')){
         game.alive=game.matches.map(x=>x.players[x.battle.winner]);
         if(game.alive.length===1){
