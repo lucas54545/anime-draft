@@ -261,6 +261,7 @@ function renderBattle(data){
   $('battleTotal0').textContent=data.scores[0]+' atributos vencidos';
   $('battleTotal1').textContent=data.scores[1]+' atributos vencidos';
   const root=$('battleRows');root.replaceChildren();
+  root.insertAdjacentHTML('beforeend','<div class="versus-header"><span>'+safe(data.names[0])+'</span><span>ATRIBUTO</span><span>'+safe(data.names[1])+'</span></div>');
   // Um duelo = só imagem pequena, nome e pontuação do atributo escolhido, em lados opostos.
   data.details.forEach((item,i)=>{
     const [left,right]=item.fighters;
