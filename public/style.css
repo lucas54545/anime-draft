@@ -428,3 +428,109 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
 @media(prefers-reduced-motion:reduce){
  .hero-card,.hero-vs,.anime-versus-row{animation:none!important}
 }
+
+/* V9 — batalhas com jogadores nos extremos e as duas fotos no centro */
+.battle-lane-head{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(132px,176px) minmax(0,1fr);
+  align-items:center;gap:8px;padding:4px 10px;margin:5px 0 7px;
+  color:#c5b1e0;letter-spacing:1px;font-size:10px;font-weight:900;text-transform:uppercase;
+}
+.battle-lane-head span:nth-child(2){color:#ff92d1;text-align:center}
+.battle-lane-head span:last-child{text-align:right}
+#battle .battle-row.battle-row-v9,
+#offline .offline-compact-fights .offline-fight.offline-fight-v9{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(132px,176px) minmax(0,1fr)!important;
+  align-items:center!important;gap:8px!important;margin:0 0 5px!important;
+  min-height:65px!important;height:auto!important;
+  padding:5px 8px!important;border:1px solid #965bc085!important;
+  border-radius:11px!important;background:linear-gradient(105deg,#301942,#18152d 50%,#1a2846)!important;
+  animation:none!important;
+}
+.battle-row-v9 .versus-text,.offline-fight-v9 .versus-text{
+  min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+  gap:2px 6px;padding:6px 8px;border-radius:8px;
+  background:#110e23bf;border:1px solid #8050a148;
+}
+.battle-row-v9 .versus-text small,.offline-fight-v9 .versus-text small{
+  grid-column:1/-1;display:block;color:#b7a7d1;font-size:8px;letter-spacing:.8px;text-transform:uppercase
+}
+.battle-row-v9 .versus-text b,.offline-fight-v9 .versus-text b{
+  font-size:clamp(10px,1.3vw,14px);font-weight:900;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis
+}
+.battle-row-v9 .versus-text strong,.offline-fight-v9 .versus-text strong{
+  font:900 clamp(23px,3.1vw,33px)/1 'Barlow Condensed',Impact,sans-serif;
+  color:#ff9cdd;text-shadow:0 0 12px #e669b538
+}
+.battle-row-v9 .versus-text.right,.offline-fight-v9 .versus-text.right{text-align:right;direction:rtl}
+.battle-row-v9 .versus-text.right strong,.offline-fight-v9 .versus-text.right strong{color:#88edff}
+.battle-row-v9 .versus-text.win,.offline-fight-v9 .versus-text.win{
+  box-shadow:inset 0 0 0 1px #e889d34b;background:#3b1b485c
+}
+.battle-row-v9 .versus-middle,.offline-fight-v9 .versus-middle{width:100%;min-width:0}
+.battle-row-v9 .middle-photos,.offline-fight-v9 .middle-photos{
+  width:100%;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:5px;
+  justify-items:center;align-items:center
+}
+.battle-row-v9 .mid-photo,.offline-fight-v9 .mid-photo{
+  width:44px;height:53px;position:relative;display:block;overflow:hidden;
+  border-radius:8px;border:1px solid #c27bea8f;background:linear-gradient(135deg,#4b2864,#1b1c36)
+}
+.battle-row-v9 .mid-photo.win,.offline-fight-v9 .mid-photo.win{
+  outline:2px solid #ed84d3;outline-offset:-2px
+}
+.battle-row-v9 .mid-photo>img.character-img,
+.offline-fight-v9 .mid-photo img.character-img{
+  display:block!important;position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center 14%
+}
+.offline-fight-v9 .mid-photo .offline-portrait{
+  width:100%!important;height:100%!important;min-height:0!important;position:relative;margin:0
+}
+.offline-fight-v9 .mid-photo .offline-portrait>span{display:none}
+.battle-row-v9 .mid-vs-wrap,.offline-fight-v9 .mid-vs-wrap{
+  text-align:center;min-width:0;overflow:hidden;
+}
+.battle-row-v9 .mid-vs-wrap>span,.offline-fight-v9 .mid-vs-wrap>span{
+  color:#ff8bda;display:block;font:900 18px/1 'Barlow Condensed',Impact,sans-serif
+}
+.battle-row-v9 .mid-vs-wrap em,.offline-fight-v9 .mid-vs-wrap em{
+  display:block;max-width:100%;font-size:9px;line-height:1.05;
+  color:#e4d7fc;font-weight:900;font-style:normal;overflow-wrap:anywhere
+}
+#battle .battle-rows,#offline .offline-compact-fights{display:grid;gap:3px}
+#offline .offline-compact-fights .offline-fight-v9 .offline-fight-label,
+#offline .offline-compact-fights .offline-fight-v9 .offline-fight-row{display:none}
+@media(max-width:680px){
+  .battle-lane-head{grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr);gap:4px;padding:2px 4px;font-size:8px}
+  #battle .battle-row.battle-row-v9,
+  #offline .offline-compact-fights .offline-fight.offline-fight-v9{
+    grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr)!important;
+    min-height:53px!important;gap:4px!important;padding:4px!important;margin-bottom:3px!important
+  }
+  .battle-row-v9 .middle-photos,.offline-fight-v9 .middle-photos{
+    grid-template-columns:34px minmax(0,1fr) 34px;gap:3px
+  }
+  .battle-row-v9 .mid-photo,.offline-fight-v9 .mid-photo{width:34px;height:42px;border-radius:6px}
+  .battle-row-v9 .versus-text,.offline-fight-v9 .versus-text{padding:3px 4px;gap:1px 3px}
+  .battle-row-v9 .versus-text small,.offline-fight-v9 .versus-text small{font-size:7px}
+  .battle-row-v9 .versus-text b,.offline-fight-v9 .versus-text b{font-size:10px}
+  .battle-row-v9 .versus-text strong,.offline-fight-v9 .versus-text strong{font-size:19px}
+  .battle-row-v9 .mid-vs-wrap em,.offline-fight-v9 .mid-vs-wrap em{font-size:8px}
+}
+@media(max-width:390px){
+  .battle-lane-head{grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr)}
+  #battle .battle-row.battle-row-v9,
+  #offline .offline-compact-fights .offline-fight.offline-fight-v9{
+    grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr)!important;
+    gap:2px!important;padding:3px!important
+  }
+  .battle-row-v9 .middle-photos,.offline-fight-v9 .middle-photos{
+    grid-template-columns:28px minmax(0,1fr) 28px;gap:2px
+  }
+  .battle-row-v9 .mid-photo,.offline-fight-v9 .mid-photo{width:28px;height:37px}
+  .battle-row-v9 .versus-text b,.offline-fight-v9 .versus-text b{font-size:9px}
+  .battle-row-v9 .versus-text strong,.offline-fight-v9 .versus-text strong{font-size:17px}
+  .battle-row-v9 .mid-vs-wrap>span,.offline-fight-v9 .mid-vs-wrap>span{font-size:14px}
+}
