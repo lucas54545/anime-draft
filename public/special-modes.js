@@ -32,7 +32,8 @@ function open(mode) {
   if(!roster.length){if(window.toast)toast('Elenco ainda não carregou.');return;}
   if(typeof show!=='function')return;
   show('special');
-  if(mode==='ffa')ffaSetup();else duelSetup();
+  if(mode!=='ffa')return;
+  ffaSetup();
 }
 function quit(){game=null;show('lobby');}
 function headline(title,desc){
@@ -163,133 +164,6 @@ function ffaFinish(){
     '<div class="ffa-result-scroll"><div class="ffa-battle-matrix">'+ATTR.map((a,i)=>'<div class="ffa-compare-row"><strong>'+a+'</strong><div>'+game.players.map(p=>'<div>'+portrait(p.team[i])+'<small>'+esc(p.team[i]?.name||'—')+'</small><b>'+(p.team[i]?.stats?.[i]??'—')+'</b></div>').join('')+'</div></div>').join('')+'</div></div>'+
     ffaHistory()+'<div class="offline-actions">'+button('🔄 NOVA PARTIDA','ffaAgain')+button('← VOLTAR','ffaHome','btn-outline')+'</div>';
   $('ffaAgain').onclick=ffaSetup;$('ffaHome').onclick=quit;
-}
-function duelSetup(){
-  game=null;
-  root().innerHTML=headline('⚔️ BATALHA DIRETA 5v5','Escolha cinco personagens para cada lado. Eles lutam um contra um em cinco confrontos. Não há disputa de Força, QI ou outros atributos: cada duelo usa raridade e um fator surpresa.')+
-    '<div class="duel-setup">'+
-    '<label class="field-label">JOGADOR 1<input id="duelName0" maxlength="20" value="'+esc($('nickname')?.value||'Jogador 1')+'"></label>'+
-    '<label class="field-label">ADVERSÁRIO<select id="duelOpponent"><option value="bot">🤖 CONTRA BOT</option><option value="local">👥 2 JOGADORES LOCAIS</option></select></label>'+
-    '<label class="field-label" id="duelName2Wrap" hidden>NOME DO JOGADOR 2<input id="duelName1" maxlength="20" value="Jogador 2"></label>'+
-    '</div><div class="offline-actions">'+button('⚔️ MONTAR TIMES','duelBegin')+button('← VOLTAR','duelHome','btn-outline')+'</div>';
-  $('duelOpponent').onchange=()=>{$('duelName2Wrap').hidden=$('duelOpponent').value!=='local';};
-  $('duelBegin').onclick=duelBegin;
-  $('duelHome').onclick=quit;
-}
-function duelBegin(){
-  const isBot=$('duelOpponent').value==='bot';
-  const name0=($('duelName0').value||'').trim().slice(0,20)||'Jogador 1';
-  const name1=isBot?'BOT':(($('duelName1').value||'').trim().slice(0,20)||'Jogador 2');
-  game={mode:'duel',names:[name0,name1],isBot,teams:[[],[]],used:new Set(),phase:'select',side:0,
-    bouts:[],round:0};
-  duelSelect();
-}
-function duelLineup(){
-  return '<div class="duel-lineups">'+game.teams.map((team,i)=>'<div class="duel-roster"><h4>'+(i===0?'🔷 ':'🔶 ')+esc(game.names[i])+' · '+team.length+'/5</h4>'+
-    '<div class="duel-lineup-faces">'+Array.from({length:5},(_,k)=>team[k]?'<div class="duel-picked">'+portrait(team[k])+'<small>'+esc(team[k].name)+'</small></div>':'<div class="duel-unfilled">?</div>').join('')+'</div></div>').join('')+'</div>';
-}
-function availableDuelCharacters(query=''){
-  const needle=query.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  return roster.filter(p=>!game.used.has(p.id)&&(!needle||(p.name+' '+p.anime).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(needle)))
-    .sort((a,b)=>a.anime.localeCompare(b.anime)||a.name.localeCompare(b.name));
-}
-function updateDuelOptions(){
-  const options=availableDuelCharacters($('duelSearch')?.value||'');
-  $('duelSelect').innerHTML=options.length?options.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+esc(p.anime)+'</option>').join(''):'<option value="">Nenhum personagem encontrado</option>';
-  $('duelAdd').disabled=!options.length;
-  if(options.length)duelPreview();
-  else $('duelPreview').innerHTML='<span class="muted">Tente outro nome ou anime.</span>';
-}
-function duelPreview(){
-  const p=roster.find(x=>x.id===$('duelSelect').value);if(!p)return;
-  $('duelPreview').innerHTML=portrait(p)+'<div><h3>'+esc(p.name)+'</h3><small>'+esc(p.anime)+'</small><div>'+rarity(p)+'</div></div>';
-}
-function duelSelect(){
-  if(!game||game.mode!=='duel')return;
-  game.phase='select';
-  const side=game.side;
-  root().innerHTML=headline('⚔️ FORME O SEU TIME','Selecione cinco personagens. Cada personagem só pode ser escolhido uma vez. No confronto final, vale a vitória do personagem, não o atributo escolhido.')+
-    duelLineup()+'<div class="duel-select-box"><span class="section-eyebrow">É A VEZ DE</span><h3>'+esc(game.names[side])+'</h3>'+
-    '<label class="field-label">ENCONTRE PERSONAGEM POR NOME OU ANIME<input id="duelSearch" placeholder="Ex.: Naruto, Goku, Rimuru..." autocomplete="off"></label>'+
-    '<label class="field-label">SELECIONE O PERSONAGEM<select id="duelSelect"></select></label><div id="duelPreview" class="duel-preview"></div>'+
-    '<div class="offline-actions">'+button('➕ ADICIONAR AO TIME','duelAdd')+button('↩ DESFAZER ÚLTIMO','duelUndo','btn-outline')+button('← SAIR','duelExit','btn-outline')+'</div></div>';
-  $('duelSearch').oninput=updateDuelOptions;
-  $('duelSelect').onchange=duelPreview;
-  $('duelAdd').onclick=duelAdd;
-  $('duelUndo').disabled=!game.teams[side].length;
-  $('duelUndo').onclick=duelUndo;
-  $('duelExit').onclick=()=>{if(confirm('Sair da batalha 5v5?'))quit();};
-  updateDuelOptions();
-}
-function duelAdd(){
-  if(!game||game.mode!=='duel'||game.phase!=='select')return;
-  const id=$('duelSelect').value,p=roster.find(x=>x.id===id),team=game.teams[game.side];
-  if(!p||game.used.has(id)||team.length>=5)return;
-  team.push(p);game.used.add(id);sound('place');
-  if(team.length===5){
-    if(game.side===0){
-      game.side=1;
-      if(game.isBot){
-        for(let k=0;k<5;k++){
-          const next=weightedPick(roster.filter(x=>!game.used.has(x.id)));
-          game.teams[1].push(next);game.used.add(next.id);
-        }
-        duelFightStart();return;
-      }
-    }else{duelFightStart();return;}
-  }
-  duelSelect();
-}
-function duelUndo(){
-  if(!game||game.mode!=='duel'||game.phase!=='select')return;
-  const last=game.teams[game.side].pop();if(!last)return;
-  game.used.delete(last.id);duelSelect();
-}
-function calculateDuel(a,b){
-  // A batalha NÃO compara atributos. Força do confronto = tier de raridade + sorte da rodada.
-  // Vantagem de raridade pode ser revertida por variação de combate.
-  const tierA=TIERS.indexOf(a.rarity)+1,tierB=TIERS.indexOf(b.rarity)+1;
-  const powerA=tierA*12+Math.floor(Math.random()*40)+1;
-  const powerB=tierB*12+Math.floor(Math.random()*40)+1;
-  const winner=powerA===powerB?(Math.random()<.5?0:1):(powerA>powerB?0:1);
-  return {a,b,powerA,powerB,winner};
-}
-function duelFightStart(){
-  if(!game||game.teams.some(team=>team.length!==5))return;
-  game.bouts=Array.from({length:5},(_,i)=>calculateDuel(game.teams[0][i],game.teams[1][i]));
-  game.round=0;game.phase='battle';duelFight();
-}
-function duelScore(){
-  return [0,1].map(i=>game.bouts.slice(0,game.round+1).filter(b=>b.winner===i).length);
-}
-function duelFight(){
-  if(!game||game.phase!=='battle')return;
-  const current=game.bouts[game.round],scores=duelScore();
-  sound(game.round===4?'victory':'impact');
-  root().innerHTML=headline('⚔️ BATALHA DIRETA • DUELO '+(game.round+1)+' / 5','Cada confronto compara o desempenho de batalha, que depende da raridade e de uma variação de combate. Nenhum dos cinco atributos é usado individualmente.')+
-    '<div class="special-battle-score"><div><small>'+esc(game.names[0])+'</small><strong>'+scores[0]+'</strong></div><span>VS</span><div><small>'+esc(game.names[1])+'</small><strong>'+scores[1]+'</strong></div></div>'+
-    '<div class="direct-clash">'+
-    '<div class="direct-fighter '+(current.winner===0?'winner':'')+'">'+portrait(current.a)+rarity(current.a)+'<h3>'+esc(current.a.name)+'</h3><strong>⚔️ '+current.powerA+'</strong></div>'+
-    '<span class="direct-vs">VS</span>'+
-    '<div class="direct-fighter '+(current.winner===1?'winner':'')+'">'+portrait(current.b)+rarity(current.b)+'<h3>'+esc(current.b.name)+'</h3><strong>⚔️ '+current.powerB+'</strong></div></div>'+
-    '<div class="special-match-winner">🏅 VENCEU O DUELO: '+esc(current.winner===0?current.a.name:current.b.name)+'</div>'+
-    '<div class="special-battle-progress">'+game.bouts.map((b,i)=>'<span class="'+(i<=game.round?'done':'')+'">DUELO '+(i+1)+'</span>').join('')+'</div>'+
-    '<div class="offline-actions">'+button(game.round===4?'🏆 VER RESULTADO FINAL':'⚔️ PRÓXIMO CONFRONTO','duelNext')+'</div>';
-  $('duelNext').onclick=()=>{game.round++;if(game.round===5)duelFinish();else duelFight();};
-}
-function duelFinish(){
-  if(!game||game.bouts.length!==5)return;
-  game.phase='result';sound('victory');
-  const scores=[0,1].map(i=>game.bouts.filter(b=>b.winner===i).length);
-  const winner=scores[0]>scores[1]?0:1;
-  root().innerHTML=headline('🏆 '+esc(game.names[winner])+' VENCEU O 5v5!','Cinco lutas diretas entre personagens. Não foi comparado nenhum atributo específico.')+
-    '<div class="special-battle-score"><div><small>'+esc(game.names[0])+'</small><strong>'+scores[0]+'</strong></div><span>VS</span><div><small>'+esc(game.names[1])+'</small><strong>'+scores[1]+'</strong></div></div>'+
-    '<div class="direct-history">'+game.bouts.map((b,i)=>'<div class="direct-history-row"><span>ROUND '+(i+1)+'</span>'+
-      '<div class="'+(b.winner===0?'winner':'')+'">'+portrait(b.a)+'<b>'+esc(b.a.name)+'</b><strong>'+b.powerA+'</strong></div>'+
-      '<b>VS</b>'+
-      '<div class="'+(b.winner===1?'winner':'')+'">'+portrait(b.b)+'<b>'+esc(b.b.name)+'</b><strong>'+b.powerB+'</strong></div></div>').join('')+'</div>'+
-    '<div class="offline-actions">'+button('⚔️ NOVA BATALHA','duelAgain')+button('← VOLTAR','duelHome','btn-outline')+'</div>';
-  $('duelAgain').onclick=duelSetup;$('duelHome').onclick=quit;
 }
 $('ffaBtn').addEventListener('click',()=>open('ffa'));
 // 5v5 agora usa leilões de 50 moedas (public/offline.js), não seleção livre.
