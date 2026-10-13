@@ -103,7 +103,7 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
   }
   function resetMatch(game,participants,stage=0,ordinal=0){
     return {id:token(),gameId:game.id,stage,ordinal,players:[...participants],mode:game.mode,
-      teams:participants.map(()=>Array(5).fill(null)),budgets:participants.map(()=>20),
+      teams:participants.map(()=>Array(5).fill(null)),budgets:participants.map(()=>game.mode==='direct'?50:20),
       round:0,max:game.mode==='ffa'?20:10,phase:'auction',
       seen:new Set(),current:null,lead:-1,bid:0,bidMode:null,turn:0,passes:new Set(),
       deadline:0,timer:null,placer:-1,price:0,avoider:-1,event:null,seconds:10,
@@ -112,12 +112,7 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
   function startGame(game){
     game.phase='active';game.stage=0;game.bracket=[];game.winners=[];game.voted=new Set();
     stopGame(game);
-    if(game.mode==='direct'){
-      game.matches=[];
-      game.direct={phase:'draft',picks:0,players:[...game.players],teams:[[],[]],
-        used:new Set(),deadline:0,timer:null,round:0,bouts:[],scores:[0,0],result:null};
-      scheduleDirect(game);return;
-    }
+    game.direct=null;
     if(game.mode==='tournament'){
       game.alive=[...game.players];
       startTournamentStage(game);return;
@@ -311,20 +306,31 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
   function finishMatch(game,m){
     if(m.phase==='complete')return;
     clearTimeout(m.timer);m.phase='complete';m.timer=null;
-    const totals=m.teams.map(team=>team.reduce((sum,p,i)=>sum+(characters.get(p)?.stats[i]||0),0));
+    // 5v5 direto: cada um dos cinco personagens vale a soma de TODOS os cinco
+    // atributos. O vencedor da partida é a equipe de maior poder total (25 valores).
+    const direct=m.mode==='direct';
+    const totals=m.teams.map(team=>team.reduce((sum,id,i)=>{
+      const c=characters.get(id);
+      return sum+(c?(direct?avg(c):c.stats[i]):0);
+    },0));
     const scores=m.teams.map(()=>0);
     const details=ATTR.map((a,i)=>{
       const fighters=m.teams.map(team=>{
-        const c=characters.get(team[i]);return c?{...plain(c),value:c.stats[i]}:null;
+        const c=characters.get(team[i]);
+        return c?{...plain(c),value:direct?avg(c):c.stats[i]}:null;
       });
       let winner=-1,top=-1;const equal=[];
-      fighters.forEach((p,k)=>{if(p&&p.value>top){winner=k;top=p.value;equal.length=0;equal.push(k)}else if(p&&p.value===top)equal.push(k)});
+      fighters.forEach((p,k)=>{
+        if(p&&p.value>top){winner=k;top=p.value;equal.length=0;equal.push(k);}
+        else if(p&&p.value===top)equal.push(k);
+      });
       if(equal.length===1)scores[winner]++;
       else winner=-1;
-      return {attribute:a,fighters,winner};
+      return {attribute:direct?'PERSONAGEM '+(i+1):a,fighters,winner};
     });
-    const champion=winnerByScore(totals,scores);
-    m.battle={winner:champion,winnerName:nickname(m.players[champion]),totals,scores,details,
+    const champion=direct?(totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1):winnerByScore(totals,scores);
+    m.battle={winner:champion,winnerName:champion<0?'EMPATE':nickname(m.players[champion]),totals,scores,details,
+      rule:direct?'Soma de todos os cinco atributos de cada um dos cinco personagens.':'total de atributos escolhidos',
       history:m.history,budgets:m.budgets,names:m.players.map(nickname)};
     if(game.mode==='tournament'){
       const target=game.bracket[game.stage].matches[m.ordinal];
@@ -362,7 +368,6 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
       bracket:game.mode==='tournament'?bracketView(game):null};
   }
   function sendView(game,tok){
-    if(game.mode==='direct'){notify(tok,directView(game,tok));return;}
     const m=matchFor(game,tok);
     if(m?.phase==='complete'&&game.mode==='tournament'&&game.phase!=='complete'){
       notify(tok,{type:'special_tournament_status',mode:game.mode,code:game.code,
@@ -382,62 +387,7 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
     }
   }
   function publishGame(game){
-    if(game.mode==='direct'){for(const tok of game.players)notify(tok,directView(game,tok));return;}
     for(const tok of game.players)sendView(game,tok);
-  }
-  function directView(game,tok){
-    const d=game.direct;
-    if(d.phase==='complete')return {type:'special_result',mode:'direct',code:game.code,
-      battle:d.result,voted:game.voted.size,needed:2};
-    return {type:'special_state',mode:'direct',code:game.code,phase:d.phase,
-      names:game.players.map(nickname),you:game.players.indexOf(tok),teams:d.teams.map(team=>team.map(id=>plain(characters.get(id)))),
-      picks:d.picks,turn:d.phase==='draft'?d.picks%2:-1,deadline:d.deadline,
-      used:[...d.used],round:d.round,bouts:d.bouts.slice(0,d.round+1),scores:d.scores};
-  }
-  function scheduleDirect(game){
-    const d=game.direct;
-    clearTimeout(d.timer);
-    if(d.phase==='draft'){
-      d.deadline=Date.now()+22000;publishGame(game);
-      d.timer=setTimeout(()=>{
-        const options=roster.filter(c=>!d.used.has(c.id));
-        if(options.length)pickDirect(game,d.picks%2,drawWeighted(options).id);
-      },22030);
-    }else if(d.phase==='duel'){
-      d.deadline=Date.now()+2800;publishGame(game);
-      d.timer=setTimeout(()=>{
-        if(d.phase!=='duel')return;
-        if(d.round<4){d.round++;scheduleDirect(game);}
-        else finishDirect(game);
-      },2850);
-    }
-    d.timer?.unref?.();
-  }
-  function pickDirect(game,side,id){
-    const d=game.direct;
-    if(d.phase!=='draft'||d.picks%2!==side||!characters.has(id)||d.used.has(id))return false;
-    d.used.add(id);d.teams[side].push(id);d.picks++;
-    if(d.picks===10){
-      d.bouts=Array.from({length:5},(_,i)=>{
-        const a=characters.get(d.teams[0][i]),b=characters.get(d.teams[1][i]);
-        const powerA=(tier(a)+1)*12+Math.floor(Math.random()*40)+1;
-        const powerB=(tier(b)+1)*12+Math.floor(Math.random()*40)+1;
-        const winner=powerA===powerB?(Math.random()<.5?0:1):powerA>powerB?0:1;
-        return {fighters:[plain(a),plain(b)],rarities:[a.rarity,b.rarity],powers:[powerA,powerB],winner};
-      });
-      d.scores=[0,0];d.round=0;d.phase='duel';scheduleDirect(game);
-    }else scheduleDirect(game);
-    return true;
-  }
-  function finishDirect(game){
-    const d=game.direct;clearTimeout(d.timer);
-    d.scores=[0,1].map(i=>d.bouts.filter(b=>b.winner===i).length);
-    const winner=d.scores[0]>d.scores[1]?0:1;
-    d.phase='complete';game.phase='complete';
-    d.result={winner,names:game.players.map(nickname),scores:d.scores,
-      bouts:d.bouts,rule:'raridade e variação de combate — sem atributos individuais'};
-    notifyMany(game.players,{type:'special_result',mode:'direct',code:game.code,
-      battle:d.result,voted:0,needed:2});
   }
   function handle(user,data){
     try{
@@ -455,13 +405,6 @@ function createSpecialMultiplayer({users,roster,issue,presence}){
         return true;
       }
       if(game.phase!=='active')throw Error('Essa partida já terminou.');
-      if(game.mode==='direct'){
-        if(data.type!=='special_pick')throw Error('Ação inválida para o modo 5v5.');
-        const d=game.direct,side=game.players.indexOf(user.token);
-        if(Date.now()>d.deadline){throw Error('Sua vez acabou.');}
-        if(!pickDirect(game,side,String(data.id||'')))throw Error('Escolha um personagem disponível na sua vez.');
-        return true;
-      }
       const m=matchFor(game,user.token);
       if(!m||m.phase==='complete')throw Error('Você não está disputando este confronto.');
       const idx=m.players.indexOf(user.token);
