@@ -691,3 +691,184 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
  .squad-waiting-actions{gap:5px}
  .squad-waiting-actions .btn{font-size:10px;padding:10px 7px}
 }
+
+/* ===== Anime Draft Battle V12 — cinco modos especiais ===== */
+.extra-modes-start{
+  margin-top:20px;padding:16px;border:1px solid #9570c685;border-radius:15px;
+  background:linear-gradient(145deg,#21173b,#131f37 70%,#1e1640)
+}
+.extra-modes-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:13px}
+.extra-modes-heading span{font-size:15px;font-weight:900;letter-spacing:.9px;color:#eebdff}
+.extra-modes-heading small{font-size:9px;color:#8deafc;font-weight:900;letter-spacing:.9px}
+.extra-mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.extra-mode-card{
+  display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;
+  min-height:123px;border:1px solid #865eac9e;border-radius:11px;padding:13px;
+  background:linear-gradient(136deg,#37214e,#162641);
+  color:#fff;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s
+}
+.extra-mode-card:hover,.extra-mode-card:focus-visible{
+  transform:translateY(-2px);border-color:#e8aafc;box-shadow:0 4px 22px #915dc448
+}
+.extra-mode-symbol{font-size:28px;line-height:1}
+.extra-mode-card b{font:900 19px/1 'Barlow Condensed',Impact,sans-serif;color:#f0d9ff}
+.extra-mode-card small{font-size:10px;line-height:1.4;color:#b5c8e2}
+.extra-modes-start>.small-note{margin:13px 0 0}
+.special-heading{margin-bottom:16px}
+.special-heading h2{
+  font:900 clamp(26px,5vw,38px)/1.1 'Barlow Condensed',Impact,sans-serif;
+  margin:8px 0;color:#f9e3ff
+}
+.special-heading p{color:#b8c9dc;font-size:12px;line-height:1.65;margin:3px 0}
+.special-heading .phase-pill{display:inline-flex;max-width:100%;font-size:10px}
+.special-input-grid,.duel-setup{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:17px 0}
+#special input,#special select{width:100%;min-width:0;padding:10px;border-radius:9px;border:1px solid #715ba2;background:#121930;color:#f9f3ff}
+#special .field-label{display:grid;gap:7px}
+#special .offline-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+#special .offline-actions .btn{flex:1;min-width:140px}
+.ffa-wallets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
+.ffa-wallet{display:grid;gap:4px;border:1px solid #7364a269;background:#1c1e38;padding:10px 8px;border-radius:10px;min-width:0}
+.ffa-wallet.active{border-color:#eec781;box-shadow:0 0 12px #dbb26948;background:#3b2846}
+.ffa-wallet small{font-size:9px;color:#afa3d5}
+.ffa-wallet b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.ffa-wallet span{font-size:10px;color:#f4c98e;font-weight:900}
+.ffa-auction-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,1fr);gap:12px;margin:16px 0}
+.ffa-offer,.ffa-turn,.ffa-choose-box,.duel-select-box{
+  background:linear-gradient(128deg,#1d1835,#17223b);border:1px solid #a273c274;
+  padding:14px;border-radius:13px;min-width:0
+}
+.ffa-offer{display:flex;gap:13px;align-items:center}
+.ffa-offer .special-portrait{flex:0 0 94px;height:120px}
+.ffa-offer h3,.ffa-turn h3,.ffa-choose-box h3{font:900 24px/1.12 'Barlow Condensed',Impact,sans-serif;margin:5px 0}
+.ffa-offer small,.ffa-turn>span{color:#a5d9f6;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px}
+.ffa-turn p,.ffa-choose-box p{font-size:12px;line-height:1.7;color:#bbbfde}
+.ffa-turn p b{color:#ffd1a3}
+.ffa-turn .auction-buttons{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.ffa-turn .auction-buttons>.btn{flex:1;min-width:112px;padding:11px 7px;font-size:11px}
+.ffa-turn>small{font-size:10px;color:#d2c1f7}
+.special-portrait{width:100%;height:100%;min-height:65px;overflow:hidden;position:relative;border-radius:10px;
+  background:radial-gradient(circle at 60% 30%,#7654be9e,#201c39 70%);border:1px solid #b184cf8a}
+.special-portrait img{width:100%;height:100%;object-fit:cover;object-position:50% 17%;display:block}
+.ffa-choose-box{display:flex;align-items:center;gap:14px;margin:15px 0}
+.ffa-choose-box>.special-portrait{flex:0 0 100px;height:130px}
+.ffa-teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:7px}
+.ffa-team{min-width:0;border-radius:9px;background:#0e1830;padding:9px}
+.ffa-team>b{font-size:12px;color:#d6b6ff;display:block;margin-bottom:8px}
+.ffa-team-slot{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px;margin-bottom:6px;padding:5px;background:#29213e;border-radius:5px}
+.ffa-team-slot small{grid-column:1/-1;color:#9bade0;font-size:9px}
+.ffa-team-slot span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ffa-team-slot strong{font-size:16px;color:#edb2fd}
+.special-power{font-size:11px;line-height:1.7;color:#dec5ff;overflow-wrap:anywhere}
+.ffa-standings{display:grid;gap:8px;margin-bottom:15px}
+.ffa-standing{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:11px;align-items:center;
+  padding:13px;border:1px solid #5f6e9e81;border-radius:10px;background:#1d2341}
+.ffa-standing.champion{background:linear-gradient(110deg,#63401b70,#522f7c82);border-color:#ecc46f}
+.ffa-standing>b{font:900 22px 'Barlow Condensed',Impact,sans-serif;color:#ffcf80}
+.ffa-standing>span{font-size:13px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ffa-standing>strong{color:#d7f6ff;font:900 20px 'Barlow Condensed',Impact,sans-serif}
+.ffa-result-scroll{overflow-x:auto}
+.ffa-battle-matrix{min-width:520px;display:grid;gap:8px}
+.ffa-compare-row{border:1px solid #8054a763;border-radius:12px;overflow:hidden}
+.ffa-compare-row>strong{display:block;padding:7px 11px;background:#47264b70;color:#ebcaff;font-size:11px}
+.ffa-compare-row>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:7px}
+.ffa-compare-row>div>div{min-width:0;text-align:center;display:grid;justify-items:center;gap:3px}
+.ffa-compare-row .special-portrait{width:54px;height:66px;min-height:0}
+.ffa-compare-row small{font-size:10px;white-space:nowrap;max-width:100%;text-overflow:ellipsis;overflow:hidden}
+.ffa-compare-row b{font:900 20px 'Barlow Condensed',Impact,sans-serif;color:#99eaff}
+.duel-lineups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.duel-roster{border:1px solid #7d68b87c;border-radius:11px;background:#1d1a36;padding:9px;min-width:0}
+.duel-roster h4{margin:0 0 8px;font-size:11px;color:#e6c5f9}
+.duel-lineup-faces{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.duel-picked{display:grid;gap:3px;min-width:0}
+.duel-picked .special-portrait,.duel-unfilled{height:55px;min-height:0}
+.duel-picked small{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.duel-unfilled{display:flex;align-items:center;justify-content:center;border:1px dashed #9879c8;border-radius:8px;color:#857aab}
+.duel-select-box{margin:15px 0;display:grid;gap:11px}
+.duel-select-box>h3{margin:0;font:900 23px 'Barlow Condensed',Impact,sans-serif;color:#f4dbff}
+.duel-preview{display:flex;align-items:center;gap:13px;border:1px solid #7d56a979;padding:9px;border-radius:9px;min-height:114px}
+.duel-preview>.special-portrait{flex:0 0 78px;height:94px}
+.duel-preview h3{font-size:15px;margin:0 0 3px}
+.duel-preview small{display:block;margin-bottom:6px;color:#aab7d3}
+.special-battle-score{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;text-align:center;margin:14px 0}
+.special-battle-score>div{background:#251e41;padding:12px;border:1px solid #9e71bb;border-radius:10px;min-width:0}
+.special-battle-score small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+.special-battle-score strong{font:900 45px/1.1 'Barlow Condensed',Impact,sans-serif;color:#d9c4f7}
+.special-battle-score>span{font:900 21px 'Barlow Condensed',Impact,sans-serif;color:#ff8ccd}
+.direct-clash{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);align-items:center;gap:8px;margin:18px 0}
+.direct-fighter{display:grid;justify-items:center;gap:8px;min-width:0;text-align:center;padding:10px;
+  border-radius:13px;background:linear-gradient(140deg,#2d2341,#152c45);border:1px solid #836dbf70}
+.direct-fighter.winner{border-color:#e5bc75;box-shadow:0 0 20px #ffc07137}
+.direct-fighter>.special-portrait{width:min(100%,145px);height:167px;min-height:0}
+.direct-fighter h3{font:900 20px 'Barlow Condensed',Impact,sans-serif;margin:0;overflow-wrap:anywhere}
+.direct-fighter strong{font-size:24px;color:#ffd5a9}
+.direct-vs{font:900 28px 'Barlow Condensed',Impact,sans-serif;text-align:center;color:#eb8ad5}
+.special-match-winner{margin:12px 0;text-align:center;padding:13px;border-radius:10px;
+ background:#76526c33;border:1px solid #ffcb91b0;color:#f9d9ab;font-weight:900;font-size:13px}
+.special-battle-progress{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.special-battle-progress span{background:#242039;color:#7688a4;padding:5px 8px;border-radius:7px;font-size:9px;font-weight:800}
+.special-battle-progress span.done{background:#7d397b63;color:#f2b4e3}
+.direct-history{display:grid;gap:7px}
+.direct-history-row{display:grid;grid-template-columns:52px minmax(0,1fr) 24px minmax(0,1fr);align-items:center;gap:7px;
+  border:1px solid #925ab47a;border-radius:9px;padding:8px}
+.direct-history-row>span{font-size:9px;color:#ffb4e6}
+.direct-history-row>div{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:6px;min-width:0}
+.direct-history-row>div.winner{color:#ffd299}
+.direct-history-row .special-portrait{width:38px;height:48px;min-height:0}
+.direct-history-row>div>b{font-size:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.direct-history-row>div>strong{font-size:14px}
+.direct-history-row>b{text-align:center;font-size:12px;color:#d98cb7}
+.mystery-auction-card{border-color:#b982f29d;box-shadow:0 0 20px #7f4de43c}
+.mystery-art{position:relative;display:grid;place-items:center;width:100%;height:100%;min-height:180px;
+ background:radial-gradient(circle at center,#7652aa,#20213e 75%);overflow:hidden}
+.mystery-silhouette{font:900 clamp(95px,17vw,175px)/1 'Barlow Condensed',Impact,sans-serif;color:#080f27;
+ text-shadow:0 0 17px #8b75df;filter:drop-shadow(0 0 6px #7b73f3);transform:rotate(-10deg)}
+.mystery-stars{position:absolute;bottom:20px;color:#d5b8ff;letter-spacing:25px}
+.roulette-event{display:flex;align-items:center;gap:14px;padding:13px;border:1px solid #e69bc2ac;
+ border-radius:12px;background:linear-gradient(106deg,#552b648a,#252348);margin:12px 0}
+.roulette-wheel{display:grid;place-items:center;width:56px;height:56px;flex:0 0 56px;border-radius:100%;
+ border:4px dashed #ffc0e6;background:conic-gradient(#ba4894,#5637ab,#248fa8,#ba4894);font-size:26px;
+ animation:roulette-spin 2.3s ease-out both}
+.roulette-event span{font-size:9px;font-weight:900;color:#ffcbee;letter-spacing:1px}
+.roulette-event h3{margin:3px 0;color:#fff;font:900 21px 'Barlow Condensed',Impact,sans-serif}
+.roulette-event p{margin:0;color:#d9c8e8;font-size:11px;line-height:1.45}
+@keyframes roulette-spin{from{transform:rotate(-720deg)}to{transform:rotate(0)}}
+.tournament-bracket{border:1px solid #cfad726e;border-radius:12px;margin:13px 0;
+ background:linear-gradient(120deg,#231b39,#35252855);padding:8px}
+.tournament-bracket summary{cursor:pointer;color:#ffe3a6;font-weight:900;font-size:12px;padding:7px}
+.tournament-stage{margin:11px 0}
+.tournament-stage>h4{font-size:11px;color:#a9e6f9;margin:4px 0 8px;letter-spacing:1px}
+.tournament-pair{display:grid;grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);align-items:center;gap:5px;
+ padding:6px;border:1px solid #79709d62;border-radius:7px;margin:3px 0;background:#151b30a3;font-size:11px}
+.tournament-pair>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tournament-pair>span:last-child{text-align:right}
+.tournament-pair>b{text-align:center;font-size:9px;color:#c2a1da}
+.tournament-pair .advanced{color:#f9d68e;font-weight:900}
+.tournament-active{background:#5d3f2538;color:#ffe3a6;text-align:center;border-radius:10px;
+ border:1px solid #cfa44c8e;padding:9px;font-weight:900;font-size:12px}
+.tournament-verdict{margin:14px 0;text-align:center;padding:15px;border-radius:11px;
+ border:1px solid #cfa865;background:#61442148;font-weight:900;color:#ffe2a3;font-size:15px}
+@media(max-width:650px){
+ .extra-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .extra-mode-card{min-height:112px;padding:10px}
+ .ffa-wallets{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ffa-auction-layout{grid-template-columns:1fr}
+ .special-input-grid,.duel-setup{grid-template-columns:1fr}
+ .special-heading h2{font-size:29px}
+ .direct-fighter>.special-portrait{height:130px}
+ .direct-history-row{grid-template-columns:39px minmax(0,1fr) 17px minmax(0,1fr);gap:3px;padding:5px}
+ .direct-history-row>div{grid-template-columns:29px minmax(0,1fr);gap:2px}
+ .direct-history-row .special-portrait{width:29px;height:40px}
+ .direct-history-row>div>strong{grid-column:2;justify-self:end;font-size:12px}
+}
+@media(max-width:400px){
+ .duel-lineups{grid-template-columns:1fr}
+ .duel-picked .special-portrait,.duel-unfilled{height:64px}
+ .direct-clash{grid-template-columns:minmax(0,1fr) 27px minmax(0,1fr);gap:4px}
+ .direct-vs{font-size:21px}
+ .direct-fighter{padding:6px}
+ .direct-fighter h3{font-size:15px}
+ .direct-fighter strong{font-size:18px}
+ .direct-fighter>.special-portrait{height:107px}
+ .special-battle-score strong{font-size:35px}
+}
+@media(prefers-reduced-motion:reduce){.roulette-wheel{animation:none}}
