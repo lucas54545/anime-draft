@@ -47,7 +47,7 @@ function historyMarkup(history,names){
 }
 
 const saved=(()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY))||{}}catch{return {}}})();
-const model={socket:null,connected:false,name:saved.name||'',token:saved.token||makeToken(),logged:false,room:null,battle:null,invitation:null,online:[],roster:[]};
+const model={socket:null,connected:false,name:saved.name||'',token:saved.token||makeToken(),logged:false,room:null,battle:null,squadLobby:null,invitation:null,online:[],roster:[]};
 const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v9'))||{}}catch{return {}}})();
 let photoQueue=[],photoBusy=false,toastTimer=null,gameTimers=[],auctionClock=null;
 
@@ -82,17 +82,55 @@ function receive(data){
     case 'invite_received':model.invitation={id:data.id,from:data.from};renderInvitations();toast('⚔ '+data.from+' desafiou você!');if(!model.room)show('lobby');break;
     case 'invite_sent':$('inviteStatus').textContent='✓ Convite enviado para '+data.to+'. Aguarde a resposta.';toast('Convite enviado!');break;
     case 'invite_declined':$('inviteStatus').textContent='Seu convite foi recusado por '+data.from+'.';toast('Seu amigo recusou o convite.');break;
-    case 'room':model.room=data;model.battle=null;renderArena();break;
+    case 'room':model.room=data;model.battle=null;model.squadLobby=null;renderArena();break;
+    case 'squad_lobby':model.squadLobby=data;model.room=null;renderSquadLobby();break;
+    case 'squad_left':model.squadLobby=null;renderLobby();show('lobby');toast(data.reason||'Você saiu da sala 2v2.');break;
     case 'rematch_status':if($('rematchStatus'))$('rematchStatus').textContent='⏳ '+data.voted+' de '+data.needed+' jogadores aceitaram a revanche.';break;
     case 'battle':model.room=null;model.battle=data;renderBattle(data);break;
     case 'left_room':model.room=null;model.battle=null;renderLobby();show('lobby');break;
   }
 }
 function renderLobby(){
-  $('loginBox').hidden=model.logged;$('signedBox').hidden=!model.logged;
+  $('loginBox').hidden=model.logged;$('signedBox').hidden=!model.logged||!!model.squadLobby;
+  $('localStart').hidden=!!model.squadLobby;
+  $('squadWaiting').hidden=!model.squadLobby;
   $('nickname').value=model.name||'';
   $('signedName').textContent=model.name;
   $('inviteStatus').textContent='';renderInvitations();
+}
+function renderSquadLobby(){
+  const lobby=model.squadLobby;
+  if(!lobby)return;
+  show('lobby');renderLobby();
+  $('squadWaiting').hidden=false;
+  $('squadCodeLabel').textContent=lobby.code;
+  for(let side=0;side<2;side++){
+    const people=lobby.members.filter(p=>p.side===side);
+    $('squad'+(side===0?'A':'B')+'Count').textContent=people.length+'/2';
+    $('squadTeam'+(side===0?'A':'B')).innerHTML=Array.from({length:2},(_,i)=>{
+      const p=people[i];
+      return '<div class="squad-member '+(p?'filled':'empty')+'">'+(p?'⚡ '+safe(p.name):'○ Aguardando jogador...')+'</div>';
+    }).join('');
+  }
+  $('squadWaitingStatus').textContent='⏳ '+lobby.count+' de 4 jogadores na sala. A partida começa quando as duas duplas estiverem completas.';
+}
+function createSquad(){
+  if(!model.logged){toast('Entre com um apelido antes de criar a sala 2v2.');return;}
+  if(send('squad_create'))playAnimeSfx('confirm');
+}
+function joinSquad(){
+  if(!model.logged){toast('Entre com um apelido antes de entrar na sala.');return;}
+  const code=$('squadCodeInput').value.toUpperCase().replace(/\s+/g,'').trim();
+  const side=Number($('squadSide').value);
+  if(!/^[A-Z2-9]{6}$/.test(code)){toast('Digite um código 2v2 válido com 6 caracteres.');return;}
+  if(send('squad_join',{code,side}))playAnimeSfx('confirm');
+}
+function leaveSquad(){if(send('squad_leave'))playAnimeSfx('confirm');}
+async function copySquadCode(){
+  const lobby=model.squadLobby;if(!lobby)return;
+  const url=location.origin+location.pathname+'?squad='+encodeURIComponent(lobby.code);
+  try{await navigator.clipboard.writeText(url);toast('Link 2v2 copiado! Envie aos seus amigos.');}
+  catch{try{prompt('Copie o link da sala:',url);}catch{toast('Código da sala: '+lobby.code);}}
 }
 function renderInvitations(){
   $('inviteInbox').hidden=!model.invitation;
@@ -294,12 +332,12 @@ function renderArena(){
   show('arena');const r=model.room;if(!r)return;
   const isAuction=r.phase==='auction',isPlace=r.phase==='place',isReveal=r.phase==='reveal';
   const myBudget=r.budgets[r.you];
-  $('roundLabel').textContent='LEILÃO '+String(Math.min(r.round+1,10)).padStart(2,'0')+' / 10';
+  $('roundLabel').textContent=(r.mode==='squad'?'2v2 • ':'')+'LEILÃO '+String(Math.min(r.round+1,10)).padStart(2,'0')+' / 10';
   $('steps').innerHTML=Array.from({length:10},(_,i)=>'<span class="'+(i<r.round?'done':i===r.round?'active':'')+'"></span>').join('');
   $('matchName0').textContent=r.names[0];$('matchName1').textContent=r.names[1];
   $('budget0').textContent=r.budgets[0];$('budget1').textContent=r.budgets[1];
   $('arenaPhase').textContent=isAuction?'LEILÃO • UM PERSONAGEM':isPlace?'ESCOLHA DO ATRIBUTO':'PODERES REVELADOS';
-  $('auctionTitle').textContent=isAuction?'QUAL JOGADOR VAI LEVAR?':isPlace?'ESCOLHA O ATRIBUTO ANTES DE REVELAR':'PERSONAGEM REVELADO!';
+  $('auctionTitle').textContent=isAuction?(r.mode==='squad'?'QUAL DUPLA VAI LEVAR?':'QUAL JOGADOR VAI LEVAR?'):isPlace?'ESCOLHA O ATRIBUTO ANTES DE REVELAR':'PERSONAGEM REVELADO!';
   $('auctionCaption').textContent=isAuction?'Um personagem por leilão. O rival tem 10 segundos para aumentar o lance em uma moeda ou desistir.':isPlace?'Somente o vencedor escolhe a posição. O personagem fica oculto até confirmar.':'Os poderes foram revelados após a escolha do atributo. Agora começa o próximo leilão!';
   $('auctionPair').hidden=isReveal;
   $('auctionPair').innerHTML=(r.offered||[]).map(c=>characterCard(c)).join('');
@@ -373,7 +411,7 @@ function renderBattle(data){
   const area=$('battleRows');
   $('battleHistory').innerHTML=historyMarkup(data.history,data.names);
   $('battleRematch').disabled=false;$('battleRematch').textContent='🔄 REVANCHE';
-  $('rematchStatus').textContent='Os dois jogadores precisam aceitar para começar novamente.';
+  $('rematchStatus').textContent=data.mode==='squad'?'Os quatro jogadores precisam aceitar para começar a revanche.':'Os dois jogadores precisam aceitar para começar novamente.';
   playAnimeSfx('victory');
   area.innerHTML='<div class="battle-lane-head"><span>'+safe(data.names[0])+'</span><span>FOTOS NO CENTRO</span><span>'+safe(data.names[1])+'</span></div>';
   data.details.forEach((item,i)=>{
@@ -396,7 +434,7 @@ function requestRematch(){
   playAnimeSfx('confirm');
   $('battleRematch').disabled=true;
   $('battleRematch').textContent='⏳ REVANCHE SOLICITADA';
-  $('rematchStatus').textContent='Aguardando confirmação do adversário...';
+  $('rematchStatus').textContent='Aguardando confirmação dos outros jogadores...';
  }
 }
 function backLobby(){cancelTimers();send('leave');model.room=null;model.battle=null;renderLobby();show('lobby');}
@@ -408,6 +446,11 @@ $('friendName').addEventListener('keydown',e=>{if(e.key==='Enter')inviteFriend()
 $('acceptBtn').addEventListener('click',()=>respond(true));
 $('declineBtn').addEventListener('click',()=>respond(false));
 $('botBtn').addEventListener('click',()=>send('bot'));
+$('squadCreateBtn').addEventListener('click',createSquad);
+$('squadJoinBtn').addEventListener('click',joinSquad);
+$('squadLeaveBtn').addEventListener('click',leaveSquad);
+$('squadCopyBtn').addEventListener('click',copySquadCode);
+$('squadCodeInput').addEventListener('keydown',event=>{if(event.key==='Enter')joinSquad();});
 $('passBid').addEventListener('click',giveUpBid);
 $('placeBid').addEventListener('click',submitBid);
 $('avoidBid').addEventListener('click',avoidBid);
@@ -418,5 +461,10 @@ $('battleRematch').addEventListener('click',requestRematch);
 $('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;try{localStorage.setItem('anime_draft_sound_v10',soundEnabled?'on':'off');}catch{}soundUI();if(soundEnabled)playAnimeSfx('confirm');});
 $('nickname').value=model.name;
 show('lobby');renderLobby();renderOnline();soundUI();
+try{
+ const code=new URLSearchParams(location.search).get('squad');
+ if(code&&/^[A-Z2-9]{6}$/i.test(code))$('squadCodeInput').value=code.toUpperCase();
+}catch{}
+
 if(location.protocol!=='file:')fetch('./api/characters').then(r=>r.ok?r.json():[]).then(r=>model.roster=r).catch(()=>{});
 connect();
