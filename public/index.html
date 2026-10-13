@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090e19">
+  <meta name="theme-color" content="#170e30">
   <meta name="description" content="Anime Draft Battle: leilão de personagens de anime, 20 moedas, atributos secretos e batalhas multiplayer com seus amigos.">
-  <title>Anime Draft Battle — Arena Multiplayer</title>
+  <title>Anime Draft Battle — Shonen Arena</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=7.1">
-  <script src="./app.js?v=7.1" defer></script>
-  <script src="./characters-local.js?v=7.1" defer></script>
-  <script src="./offline.js?v=7.1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=8.0">
+  <script src="./app.js?v=8.0" defer></script>
+  <script src="./characters-local.js?v=8.0" defer></script>
+  <script src="./offline.js?v=8.0" defer></script>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -24,17 +24,17 @@
   <main class="container">
     <section class="hero" id="hero">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="star">✦</span> A ARENA DEFINITIVA DE ANIME</div>
-        <h1>O MELHOR <span>DRAFT</span><br>VENCE A <em>BATALHA.</em></h1>
+        <div class="eyebrow"><span class="star">✦</span> アニメ • A ARENA DEFINITIVA DE ANIME</div>
+        <h1>O MELHOR <span>DRAFT</span><br>VENCE A <em>BATALHA.</em></h1><div class="anime-hero-caption">✦ SHONEN TOURNAMENT / バトル アリーナ ✦</div>
         <p>Serão 10 leilões com um personagem por vez. Escolha cada posição sem conhecer os poderes, desafie amigos e some os atributos para vencer.</p>
-        <div class="hero-pills"><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span></div>
+        <div class="hero-pills"><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span><span>🌸 38 ANIMES • 142 PERSONAGENS</span></div>
       </div>
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-1"></div><div class="orbit orbit-2"></div><span class="crosshair">✛</span><div class="hero-card hero-card-left"><span>⚡</span><small>POWER</small><b>???</b></div><div class="hero-vs">VS</div><div class="hero-card hero-card-right"><span>🔥</span><small>SKILL</small><b>???</b></div><div class="orbit-label">ANIME DRAFT / RANKED ARENA</div></div>
     </section>
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 7.1 • FOTOS + LIMBO</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 8.0 • SHONEN ARENA</span></div>
 
         <section id="lobby" class="screen panel-body">
           <div id="loginBox" class="login-grid">
@@ -99,7 +99,7 @@
         <section id="battle" class="screen panel-body" hidden><div class="battle-banner"><span class="battle-kicker">A BATALHA FINAL COMEÇOU</span><div class="battle-glow">🏆</div><h2 id="winnerTitle">RESULTADO DA ARENA</h2><p id="winnerSubtitle">Calculando o vencedor...</p><div class="scoreboards"><div><small id="battleName0">JOGADOR 1</small><b id="battleScore0">0</b><span id="battleTotal0">0 pontos</span></div><div class="center-vs">VS</div><div><small id="battleName1">JOGADOR 2</small><b id="battleScore1">0</b><span id="battleTotal1">0 pontos</span></div></div></div><div class="battle-rows" id="battleRows"></div><div class="action-grid"><button class="btn btn-primary" id="goLobby">⚔ VOLTAR AO LOBBY</button><button class="btn btn-outline" id="copyBattle">📋 COPIAR RESULTADO</button></div></section>
       </div>
 
-      <aside class="right-rail"><div class="rail-card"><div class="rail-title"><span class="mini-dot"></span> JOGADORES ONLINE</div><div id="onlineList" class="online-list"><span class="muted">Entre para ver quem está online.</span></div><p class="rail-foot">Convites funcionam quando os dois estão conectados ao mesmo site.</p></div><div class="rail-card rules-card"><div class="rail-title">⚡ COMO FUNCIONA</div><div class="rule"><b>01</b><div><strong>Escolha o adversário</strong><p>Envie o convite pelo apelido e espere ele aceitar.</p></div></div><div class="rule"><b>02</b><div><strong>Dispute os leilões</strong><p>Você começa com 20 moedas. Dispute um personagem por leilão. O rival tem 10 segundos para cobrir o lance, aumentando uma moeda.</p></div></div><div class="rule"><b>03</b><div><strong>Descubra os poderes</strong><p>Depois de vencer o leilão, escolha uma posição livre. Os poderes aparecem só após confirmar.</p></div></div><div class="rule"><b>04</b><div><strong>Enfrente o seu rival</strong><p>Ambos veem o resultado ao mesmo tempo. Quem somar mais pontos nos cinco atributos vence.</p></div></div></div><div class="credit-card">70 PERSONAGENS <span>✦</span> 14 ANIMES <span>✦</span> MUITAS SURPRESAS</div></aside>
+      <aside class="right-rail"><div class="rail-card"><div class="rail-title"><span class="mini-dot"></span> JOGADORES ONLINE</div><div id="onlineList" class="online-list"><span class="muted">Entre para ver quem está online.</span></div><p class="rail-foot">Convites funcionam quando os dois estão conectados ao mesmo site.</p></div><div class="rail-card rules-card"><div class="rail-title">⚡ COMO FUNCIONA</div><div class="rule"><b>01</b><div><strong>Escolha o adversário</strong><p>Envie o convite pelo apelido e espere ele aceitar.</p></div></div><div class="rule"><b>02</b><div><strong>Dispute os leilões</strong><p>Você começa com 20 moedas. Dispute um personagem por leilão. O rival tem 10 segundos para cobrir o lance, aumentando uma moeda.</p></div></div><div class="rule"><b>03</b><div><strong>Descubra os poderes</strong><p>Depois de vencer o leilão, escolha uma posição livre. Os poderes aparecem só após confirmar.</p></div></div><div class="rule"><b>04</b><div><strong>Enfrente o seu rival</strong><p>Ambos veem o resultado ao mesmo tempo. Quem somar mais pontos nos cinco atributos vence.</p></div></div></div><div class="credit-card">142 PERSONAGENS <span>✦</span> 38 ANIMES <span>✦</span> MUITAS SURPRESAS</div></aside>
     </section>
     <footer>ANIME DRAFT BATTLE <span>Fan game não oficial. Poderes são valores fictícios de jogo. Personagens pertencem aos seus criadores. Imagens quando disponíveis via Jikan / MyAnimeList. Imagens podem depender da conexão com a API.</span></footer>
   </main>
