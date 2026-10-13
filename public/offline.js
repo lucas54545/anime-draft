@@ -83,7 +83,19 @@ function updateClock(){
   if($('localSeconds'))$('localSeconds').classList.toggle('urgent-text',left<=3);
   if($('localRaise'))$('localRaise').disabled=left<=0||st.bidMode==='avoid'||st.bid+1>st.budgets[st.turn];
   if($('localAvoid'))$('localAvoid').disabled=left<=0||st.bidMode==='buy'||!free(0).length||!free(1).length||Math.abs(st.bidMode==='avoid'?st.bid-1:-1)>st.budgets[st.turn];
-  if(left<=0)endBid('tempo esgotado');
+  if(left<=0)expireAuctionTurn();
+}
+function expireAuctionTurn(){
+  if(!st||st.phase!=='auction')return;
+  if(st.bidMode!==null){endBid('tempo esgotado');return;}
+  const other=1-st.turn;
+  if(free(other).length&&st.budgets[other]>=1)st.turn=other;
+  else if(!(free(st.turn).length&&st.budgets[st.turn]>=1)){
+    // Só se ninguém puder dar lance é necessário distribuir sem custo.
+    endBid('nenhum lance possível');return;
+  }
+  st.deadline=Date.now()+10000;
+  auction();schedule();
 }
 function schedule(){
   timers();ticker=setInterval(updateClock,125);updateClock();
@@ -93,7 +105,9 @@ function schedule(){
       const next=st.bidMode==='avoid'?st.bid-1:st.bid+1,desired=1+Math.floor(Math.random()*6);
       if(st.bidMode===null&&free(0).length&&st.budgets[1]>=1&&Math.random()<.23)bid(-1);
       else if(st.bidMode==='avoid'&&Math.abs(next)<=st.budgets[1]&&Math.abs(next)<=desired&&Math.random()<.65)bid(next);
+      else if(st.bidMode===null&&st.budgets[1]>=1)bid(1);
       else if(st.bidMode!=='avoid'&&next<=st.budgets[1]&&next<=desired&&Math.random()<.8)bid(next);
+      else if(st.bidMode===null)expireAuctionTurn();
       else endBid('bot aceitou o lance');
     },850+Math.random()*1400);
   }
@@ -103,17 +117,17 @@ function auction(){
   root().innerHTML=heading('LEILÃO • 10 SEGUNDOS','Escolha comprar +1 ou evitar -1: quem evitar perde as moedas no limbo.')+
     '<div class="offline-budgets"><div><b>'+esc(st.names[0])+'</b><span>🪙 '+st.budgets[0]+' moedas</span></div><strong>VS</strong><div><b>'+esc(st.names[1])+'</b><span>🪙 '+st.budgets[1]+' moedas</span></div></div>'+
     '<div class="auction-pair single-auction">'+card(st.current)+'</div>'+
-    '<div class="live-auction"><div class="live-auction-numbers"><div><small>LANCE ATUAL</small><strong>🪙 '+st.bid+'</strong></div><div class="clock-face"><small>TEMPO PARA RESPONDER</small><b id="localSeconds">10</b><div class="timer-track"><span id="localTimerBar"></span></div></div></div><p>'+(st.leader<0?'Comprar +1, evitar -1 ou aceitar grátis':st.bidMode==='avoid'?esc(st.names[st.leader])+' queimará '+Math.abs(st.bid)+' moedas no limbo':esc(st.names[st.leader])+' está vencendo')+'</p></div>'+
+    '<div class="live-auction"><div class="live-auction-numbers"><div><small>LANCE ATUAL</small><strong>🪙 '+st.bid+'</strong></div><div class="clock-face"><small>TEMPO PARA RESPONDER</small><b id="localSeconds">10</b><div class="timer-track"><span id="localTimerBar"></span></div></div></div><p>'+(st.leader<0?'Faça o primeiro lance: +1 para comprar ou -1 para evitar':st.bidMode==='avoid'?esc(st.names[st.leader])+' queimará '+Math.abs(st.bid)+' moedas no limbo':esc(st.names[st.leader])+' está vencendo')+'</p></div>'+
     '<div class="offline-bidbox"><div class="offline-bidline"><div><span class="section-eyebrow">É A VEZ DE</span><h3>'+esc(st.names[turn])+'</h3></div><div class="offline-current">🪙 <strong>'+st.bid+'</strong></div></div>'+
-    '<p class="offline-desc">Saldo: '+st.budgets[turn]+'. '+(st.bidMode==='avoid'?'Quem oferecer mais negativo evita o personagem; as moedas desaparecem.':st.bidMode==='buy'?'Quem oferecer mais positivo fica com o personagem.':'Você pode comprar, evitar ou aceitar de graça.')+'</p>'+
+    '<p class="offline-desc">Saldo: '+st.budgets[turn]+'. '+(st.bidMode==='avoid'?'Quem oferecer mais negativo evita o personagem; as moedas desaparecem.':st.bidMode==='buy'?'Quem oferecer mais positivo fica com o personagem.':'Para abrir o leilão, escolha comprar ou evitar. Pegar grátis não está disponível.')+'</p>'+
     '<div class="auction-buttons">'+(st.bidMode==='avoid'?'':btn('⚡ COMPRAR +'+next,'localRaise'))+
     ((st.bidMode==='buy'||!free(0).length||!free(1).length)?'':btn('🛡️ EVITAR '+neg,'localAvoid','btn-danger'))+
-    btn(st.bidMode===null?'✅ ACEITAR GRÁTIS':st.bidMode==='avoid'?'✅ ACEITAR GRÁTIS':'✋ DESISTIR','localPass','btn-outline')+'</div></div>'+
+    (st.bidMode===null?'':btn(st.bidMode==='avoid'?'✅ PEGAR GRÁTIS':'✋ DESISTIR','localPass','btn-outline'))+'</div></div>'+
     '<div class="offline-subtitle">⚔️ TIMES FORMADOS ATÉ AGORA</div>'+teams()+
     '<div class="offline-actions">'+btn('← SAIR','localExit','btn-outline')+'</div>';
   if($('localRaise'))$('localRaise').onclick=()=>bid(next);
   if($('localAvoid'))$('localAvoid').onclick=()=>bid(neg);
-  $('localPass').onclick=()=>endBid(st.bidMode===null?'Aceitou gratuitamente':'Encerrado');
+  if($('localPass'))$('localPass').onclick=()=>{if(st.bidMode!==null)endBid(st.bidMode==='avoid'?'Pegou gratuitamente':'Desistiu de cobrir');};
   $('localExit').onclick=()=>{if(confirm('Sair da partida?'))quit();};
   updateClock();
 }
@@ -129,7 +143,7 @@ function bid(amount){
   auction();schedule();
 }
 function endBid(reason){
-  if(!st||st.phase!=='auction')return;
+  if(!st||st.phase!=='auction'||(st.bidMode===null&&reason!=='nenhum lance possível'))return;
   timers();st.phase='choose';st.reason=reason;
   let winner,avoider=-1,price=0;
   if(st.bidMode==='avoid'&&st.leader>=0){
