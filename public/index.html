@@ -9,10 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=8.0">
-  <script src="./app.js?v=8.0" defer></script>
-  <script src="./characters-local.js?v=8.0" defer></script>
-  <script src="./offline.js?v=8.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=8.1">
+  <script src="./app.js?v=8.1" defer></script>
+  <script src="./characters-local.js?v=8.1" defer></script>
+  <script src="./offline.js?v=8.1" defer></script>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -34,7 +34,7 @@
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 8.0 • SHONEN ARENA</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 8.1 • SHONEN ARENA</span></div>
 
         <section id="lobby" class="screen panel-body">
           <div id="loginBox" class="login-grid">
@@ -80,8 +80,8 @@
           </div>
           <div id="biddingArea" class="bid-panel" hidden>
             <div class="bid-top"><div><small>É SUA VEZ!</small><strong>🪙 <span id="bidValue">1</span></strong></div><div class="balance-hint">Você tem <b id="budgetHint">20</b> moedas</div></div>
-            <p class="bid-help">Seu próximo lance aumenta exatamente 1 moeda. O rival tem 10 segundos para responder.</p>
-            <div class="auction-buttons"><button id="placeBid" class="btn btn-primary">⚡ COMPRAR +1</button><button id="avoidBid" class="btn btn-danger">🛡️ EVITAR -1</button><button id="passBid" class="btn btn-outline">✋ DESISTIR</button></div>
+            <p class="bid-help">Primeiro dê +1 para comprar ou -1 para evitar. Pegar grátis só é possível depois de um lance negativo.</p>
+            <div class="auction-buttons"><button id="placeBid" class="btn btn-primary">⚡ COMPRAR +1</button><button id="avoidBid" class="btn btn-danger">🛡️ EVITAR -1</button><button id="passBid" class="btn btn-outline" hidden>✋ DESISTIR</button></div>
             <p class="small-note">Os poderes ficam em ??? até o vencedor escolher a posição.</p>
           </div>
           <div id="awaitBid" class="waiting-card" hidden><span class="loading-ring"></span><div><b>AGUARDANDO O ADVERSÁRIO</b><p id="waitingMessage">Ele pode cobrir o lance ou desistir.</p></div></div>
