@@ -102,6 +102,11 @@ function connect(){
   ws.addEventListener('message',ev=>{try{receive(JSON.parse(ev.data));}catch(e){console.warn('Mensagem não pôde ser lida:',e)}});
 }
 function receive(data){
+  // Os cinco modos online usam as mesmas sessões autenticadas e o mesmo WebSocket.
+  if(typeof data?.type==='string'&&data.type.startsWith('special_')){
+    window.dispatchEvent(new CustomEvent('anime-special',{detail:data}));
+    return;
+  }
   switch(data.type){
     case 'connected':break;
     case 'error':toast(data.message||'Erro desconhecido.');break;
@@ -511,6 +516,11 @@ $('copyBattle').addEventListener('click',copyResult);
 $('battleRematch').addEventListener('click',requestRematch);
 $('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;try{localStorage.setItem('anime_draft_sound_v10',soundEnabled?'on':'off');}catch{}soundUI();if(soundEnabled)playAnimeSfx('confirm');});
 $('nickname').value=model.name;
+// API pequena para os novos modos online, sem duplicar a conexão e o login.
+window.animeSpecialSend=(type,extra={})=>send(type,extra);
+window.animeSpecialConnected=()=>model.connected&&model.logged;
+window.animeSpecialShow=view=>show(view);
+window.animeSpecialToast=message=>toast(message);
 show('lobby');renderLobby();renderOnline();soundUI();onlineState(false);
 try{
  const code=new URLSearchParams(location.search).get('squad');
