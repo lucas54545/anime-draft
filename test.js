@@ -53,7 +53,7 @@ const extraModes=read('public/special-modes.js');
 for(const id of ['localTournamentBtn','localMysteryBtn','localRouletteBtn','ffaBtn','direct5v5Btn','specialContent']){
   assert.ok(html.includes('id="'+id+'"'),'Botão ou tela V12 ausente: '+id);
 }
-assert.ok(html.includes('special-modes.js?v=12.0'),'Novo script precisa ser carregado');
+assert.ok(html.includes('special-modes.js?v=12.1'),'Novo script precisa ser carregado');
 assert.ok(app.includes("['lobby','offline','special','arena','battle']"),'Navegação V12 indisponível');
 assert.ok(app.includes('window.imageMarkup=imageMarkup;'),'Os retratos locais devem usar as imagens reais');
 for(const method of ['function tournamentBotDuel(','function tournamentAdvance(','function tournamentBracket(','function rouletteSpin(']){
