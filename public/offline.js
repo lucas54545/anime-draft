@@ -95,6 +95,51 @@ function card(p){
 function free(side){return st.teams[side].map((p,i)=>p===null?i:-1).filter(i=>i>=0);}
 function count(side){return 5-free(side).length;}
 function quit(){timers();st=null;show('lobby');}
+function tournamentBotDuel(first,second){
+  // Outras chaves são jogadas por times de cinco personagens sorteados para os bots.
+  const pool=[...roster].sort(()=>Math.random()-.5);
+  const scores=[pool.slice(0,5),pool.slice(5,10)].map(team=>team.reduce((sum,p,i)=>sum+p.stats[i],0));
+  const winner=scores[0]===scores[1]?(Math.random()<.5?0:1):(scores[0]>scores[1]?0:1);
+  return {first,second,winner:winner===0?first:second,scores};
+}
+function newTournament(name){
+  const bots=['BOT NINJA','BOT SAIYAJIN','BOT SHINIGAMI','BOT HUNTER','BOT PIRATA','BOT MAGO','BOT SENSEI'];
+  const q2=tournamentBotDuel(bots[1],bots[2]);
+  const q3=tournamentBotDuel(bots[3],bots[4]);
+  const q4=tournamentBotDuel(bots[5],bots[6]);
+  const s2=tournamentBotDuel(q3.winner,q4.winner);
+  return {stage:0,human:name,bots,quarter2:q2,quarter3:q3,quarter4:q4,semi2:s2,
+    opponents:[bots[0],q2.winner,s2.winner],results:[]};
+}
+function tournamentBracket(){
+  if(st?.mode!=='tournament'||!st.tournament)return '';
+  const t=st.tournament,result=(left,right,winner)=>'<div class="tournament-pair"><span class="'+(winner===left?'advanced':'')+'">'+esc(left)+'</span><b>VS</b><span class="'+(winner===right?'advanced':'')+'">'+esc(right)+'</span></div>';
+  const playerWinner=i=>t.results[i]?.winner===0?t.human:t.results[i]?.winner===1?t.opponents[i]:'';
+  return '<details class="tournament-bracket" '+(st.phase==='battle'?'open':'')+'><summary>🏆 CHAVE DO TORNEIO · 8 PARTICIPANTES</summary>'+
+    '<div class="tournament-stage"><h4>QUARTAS DE FINAL</h4>'+
+      result(t.human,t.bots[0],playerWinner(0))+
+      result(t.quarter2.first,t.quarter2.second,t.quarter2.winner)+
+      result(t.quarter3.first,t.quarter3.second,t.quarter3.winner)+
+      result(t.quarter4.first,t.quarter4.second,t.quarter4.winner)+'</div>'+
+    '<div class="tournament-stage"><h4>SEMIFINAIS</h4>'+
+      result(t.results[0]?.winner===1?t.bots[0]:t.human,t.quarter2.winner,playerWinner(1))+
+      result(t.semi2.first,t.semi2.second,t.semi2.winner)+'</div>'+
+    '<div class="tournament-stage"><h4>FINAL</h4>'+
+      result(t.results[1]?.winner===1?t.quarter2.winner:t.human,t.semi2.winner,playerWinner(2))+'</div></details>';
+}
+function tournamentAdvance(){
+ if(!st||st.mode!=='tournament'||!st.tournament)return;
+ const t=st.tournament,last=t.results[t.stage];
+ if(!last||last.winner===1)return;
+ if(last.winner===0)t.stage++;
+ if(t.stage>=3)return;
+ st.names=[t.human,t.opponents[t.stage]];
+ st.budgets=[20,20];st.teams=[Array(5).fill(null),Array(5).fill(null)];
+ st.round=0;st.seen=[];st.current=null;st.bidMode=null;
+ st.leader=-1;st.bid=0;st.turn=0;st.history=[];st.lastBeepSecond=10;
+ st.roulette=null;st.turnSeconds=10;
+ sound('confirm');draw();
+}
 function start(mode){
   timers();
   const first=($('nickname')?.value||'Jogador 1').trim()||'Jogador 1';
