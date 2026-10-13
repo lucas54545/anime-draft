@@ -292,5 +292,5 @@ function duelFinish(){
   $('duelAgain').onclick=duelSetup;$('duelHome').onclick=quit;
 }
 $('ffaBtn').addEventListener('click',()=>open('ffa'));
-$('direct5v5Btn').addEventListener('click',()=>open('duel'));
+// 5v5 agora usa leilões de 50 moedas (public/offline.js), não seleção livre.
 })();
