@@ -35,11 +35,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=12.0">
-  <script src="./app.js?v=12.0" defer></script>
-  <script src="./characters-local.js?v=12.0" defer></script>
-  <script src="./offline.js?v=12.0" defer></script>
-  <script src="./special-modes.js?v=12.0" defer></script>
+  <link rel="stylesheet" href="./style.css?v=12.1">
+  <script src="./app.js?v=12.1" defer></script>
+  <script src="./characters-local.js?v=12.1" defer></script>
+  <script src="./offline.js?v=12.1" defer></script>
+  <script src="./special-modes.js?v=12.1" defer></script>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -61,16 +61,23 @@
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 12.0 • 5 NOVOS MODOS</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 12.1 • 5 NOVOS MODOS</span></div>
 
         <section id="lobby" class="screen panel-body">
+          <div id="arenaConnectionNotice" class="arena-connection-notice" hidden role="status" aria-live="polite">
+            <span class="arena-notice-icon">🎮</span>
+            <div>
+              <strong>MODO LOCAL DISPONÍVEL</strong>
+              <p>O servidor online não está conectado. Você ainda pode entrar na arena e jogar os modos locais, contra bot e os novos modos especiais. Multiplayer precisa do servidor online.</p>
+            </div>
+          </div>
           <div id="loginBox" class="login-grid">
             <div>
               <label class="field-label" for="nickname">SEU NOME DE JOGADOR</label>
               <input id="nickname" maxlength="20" autocomplete="nickname" placeholder="Ex.: NinjaLucas" spellcheck="false">
             </div>
             <button class="btn btn-primary" id="loginBtn" type="button">ENTRAR NA ARENA <span>↗</span></button>
-            <div class="small-note">O nome só funciona enquanto você estiver conectado. Não precisa criar conta.</div>
+            <div class="small-note">O apelido funciona nos modos locais mesmo sem servidor. Para jogar online com amigos, é necessária uma conexão multiplayer.</div>
           </div>
           <div id="signedBox" hidden>
             <div class="signed-row"><div class="profile-icon">⚡</div><div><small>VOCÊ ESTÁ JOGANDO COMO</small><b id="signedName">Jogador</b></div><button class="btn btn-quiet" id="changeName" type="button">Trocar nome</button></div>
