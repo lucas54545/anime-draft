@@ -143,20 +143,21 @@ function tournamentAdvance(){
 function start(mode){
   timers();
   const first=($('nickname')?.value||'Jogador 1').trim()||'Jogador 1';
-  const squad=mode==='local2v2';
-  st={mode,names:[first,['bot','mystery','roulette','tournament'].includes(mode)?'BOT':'Jogador 2'],members:[],
-    budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
+  const squad=mode==='local2v2',direct=mode==='direct5v5';
+  st={mode,names:[first,['bot','mystery','roulette','tournament','direct5v5'].includes(mode)?'BOT':'Jogador 2'],members:[],
+    directBot:direct,budgets:direct?[50,50]:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
     current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
     winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
   if(mode==='tournament'){st.tournament=newTournament(first);st.names[1]=st.tournament.opponents[0];}
   show('offline');
-  root().innerHTML=(mode==='tournament'?tournamentBracket():'')+'<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':mode==='mystery'?'LEILÃO MISTERIOSO':mode==='roulette'?'ROLETA':mode==='tournament'?'TORNEIO DE 8':squad?'2v2 LOCAL • QUATRO JOGADORES':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 20 MOEDAS POR EQUIPE</span></div>'+
-    '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">'+(squad?'Dupla A: jogadores 1 e 2. Dupla B: jogadores 3 e 4. As moedas e cinco posições são compartilhadas por dupla.':mode==='mystery'?'O personagem fica escondido até você escolher a posição. Você só conhece o anime durante os lances.':mode==='roulette'?'Todo leilão tem uma roleta de efeitos: moedas extras, 7 segundos, 15 segundos e portais especiais.':mode==='tournament'?'Oito participantes no mata-mata! Dispute quartas, semifinal e final contra bots com 10 leilões por partida.':'Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.')+'</p>'+
+  root().innerHTML=(mode==='tournament'?tournamentBracket():'')+'<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':mode==='mystery'?'LEILÃO MISTERIOSO':mode==='roulette'?'ROLETA':mode==='tournament'?'TORNEIO DE 8':direct?'PERSONAGENS 5v5 • LEILÃO':squad?'2v2 LOCAL • QUATRO JOGADORES':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 '+(direct?'50':'20')+' MOEDAS POR EQUIPE</span></div>'+
+    '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">'+(squad?'Dupla A: jogadores 1 e 2. Dupla B: jogadores 3 e 4. As moedas e cinco posições são compartilhadas por dupla.':mode==='mystery'?'O personagem fica escondido até você escolher a posição. Você só conhece o anime durante os lances.':mode==='roulette'?'Todo leilão tem uma roleta de efeitos: moedas extras, 7 segundos, 15 segundos e portais especiais.':mode==='tournament'?'Oito participantes no mata-mata! Dispute quartas, semifinal e final contra bots com 10 leilões por partida.':direct?'São 10 leilões para formar times de 5 personagens. Cada jogador começa com 50 moedas. Na batalha final, vence o time com a maior soma do poder total de seus cinco personagens.':'Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.')+'</p>'+
     '<div class="offline-fields">'+(squad?
       Array.from({length:4},(_,i)=>'<label class="field-label">'+(i<2?'🔷 DUPLA A':'🔶 DUPLA B')+' · JOGADOR '+(i+1)+'<input id="offlineName'+i+'" maxlength="20" value="'+esc(i===0?first:'Jogador '+(i+1))+'"></label>').join(''):
       '<label class="field-label">JOGADOR 1<input id="offlineName0" maxlength="20" value="'+esc(first)+'"></label>'+
-      (mode==='local'?'<label class="field-label">JOGADOR 2<input id="offlineName1" maxlength="20" value="Jogador 2"></label>':''))+'</div>'+
+      ((mode==='local'||direct)?'<label class="field-label">'+(direct?'ADVERSÁRIO':'JOGADOR 2')+(direct?'<select id="directOpponent"><option value="bot">🤖 BOT</option><option value="local">👥 AMIGO NO MESMO APARELHO</option></select>':'')+'<input id="offlineName1" maxlength="20" value="Jogador 2" '+(direct?'style="display:none"':'')+'></label>':''))+'</div>'+
     '<div class="offline-actions">'+btn('COMEÇAR →','offlineStart')+btn('← VOLTAR','offlineBack','btn-outline')+'</div>';
+  if(direct){$('directOpponent').onchange=()=>{$('offlineName1').style.display=$('directOpponent').value==='local'?'block':'none';};}
   $('offlineStart').onclick=()=>{
     if(squad){
       st.members=Array.from({length:4},(_,i)=>($('offlineName'+i).value.trim().slice(0,20)||'Jogador '+(i+1)));
@@ -164,6 +165,7 @@ function start(mode){
     }else{
       st.names[0]=$('offlineName0').value.trim().slice(0,20)||'Jogador 1';
       if(mode==='local')st.names[1]=$('offlineName1').value.trim().slice(0,20)||'Jogador 2';
+      if(direct){st.directBot=$('directOpponent').value==='bot';st.names[1]=st.directBot?'BOT':($('offlineName1').value.trim().slice(0,20)||'Jogador 2');}
       if(mode==='tournament'){st.tournament=newTournament(st.names[0]);st.names[1]=st.tournament.opponents[0];}
     }
     draw();
@@ -206,7 +208,7 @@ function expireAuctionTurn(){
 }
 function schedule(){
   timers();ticker=setInterval(updateClock,125);updateClock();
-  if(st&&['bot','mystery','roulette','tournament'].includes(st.mode)&&st.phase==='auction'&&st.turn===1){
+  if(st&&(['bot','mystery','roulette','tournament'].includes(st.mode)||(st.mode==='direct5v5'&&st.directBot))&&st.phase==='auction'&&st.turn===1){
     botWait=setTimeout(()=>{
       if(!st||st.phase!=='auction'||st.turn!==1)return;
       const next=st.bidMode==='avoid'?st.bid-1:st.bid+1,desired=1+Math.floor(Math.random()*6);
@@ -264,12 +266,12 @@ function endBid(reason){
   if(!free(winner).length)winner=1-winner;
   st.winner=winner;st.avoider=avoider;st.price=price;
   sound('confirm');choose();
-  if(['bot','mystery','roulette','tournament'].includes(st.mode)&&winner===1)botWait=setTimeout(()=>chooseSlot(free(1)[Math.floor(Math.random()*free(1).length)]),900);
+  if((['bot','mystery','roulette','tournament'].includes(st.mode)||(st.mode==='direct5v5'&&st.directBot))&&winner===1)botWait=setTimeout(()=>chooseSlot(free(1)[Math.floor(Math.random()*free(1).length)]),900);
 }
 function choose(){
   const n=st.winner,p=st.current;
   const chosenName=st.mode==='mystery'?'um personagem misterioso de '+esc(p.anime):esc(p.name);
-  root().innerHTML=heading('ESCOLHA ONDE COLOCAR','Os atributos numéricos continuam escondidos até confirmar a posição.')+
+  root().innerHTML=heading('ESCOLHA ONDE COLOCAR',st.mode==='direct5v5'?'Defina a ordem do seu time de cinco. O resultado dependerá da soma de todos os poderes.':'Os atributos numéricos continuam escondidos até confirmar a posição.')+
     '<div class="offline-winner"><span>🏆 VENCEDOR DO LEILÃO</span><h3>'+esc(st.names[n])+'</h3><p>Levou '+esc(p.name)+'. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Preço 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="auction-pair single-auction">'+card(p)+'</div>'+
     '<div class="placement-area"><span class="section-eyebrow">🎯 DEFINA SUA ESTRATÉGIA</span><h3>ESCOLHA UMA POSIÇÃO LIVRE</h3>'+
@@ -289,7 +291,43 @@ function chooseSlot(slot){
     '<div class="offline-actions">'+btn(st.round===9?'⚔️ VER BATALHA FINAL':'PRÓXIMO LEILÃO →','localNext')+'</div>';
   $('localNext').onclick=()=>{st.round++;if(st.round>=10)battle();else draw();};
 }
+function directAuctionBattle(){
+ timers();st.phase='battle';sound('victory');
+ const power=p=>p?.stats?.reduce((sum,v)=>sum+v,0)||0;
+ const totals=st.teams.map(team=>team.reduce((sum,p)=>sum+power(p),0));
+ const counts=[0,0];
+ const fights=Array.from({length:5},(_,i)=>{
+  const a=st.teams[0][i],b=st.teams[1][i],x=power(a),y=power(b);
+  if(x>y)counts[0]++;else if(y>x)counts[1]++;
+  return '<div class="offline-fight offline-fight-v9" style="--battle-delay:'+(i*85)+'ms">'+
+    '<div class="versus-text left '+(x>y?'win':'')+'"><small>PERSONAGEM '+(i+1)+'</small><b>'+esc(a?.name||'—')+'</b><strong>⚡ '+x+'</strong></div>'+
+    '<div class="versus-middle"><div class="middle-photos"><div class="mid-photo '+(x>y?'win':'')+'">'+(a?portrait(a):'?')+'</div>'+
+    '<div class="mid-vs-wrap"><span>VS</span><em>COMBATE '+(i+1)+'</em></div>'+
+    '<div class="mid-photo '+(y>x?'win':'')+'">'+(b?portrait(b):'?')+'</div></div></div>'+
+    '<div class="versus-text right '+(y>x?'win':'')+'"><small>PERSONAGEM '+(i+1)+'</small><b>'+esc(b?.name||'—')+'</b><strong>⚡ '+y+'</strong></div></div>';
+ }).join('');
+ const winner=totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1;
+ root().innerHTML='<div class="offline-final"><span class="phase-pill">⚔️ PERSONAGENS 5v5 • SOMA TOTAL</span>'+
+  '<h2>'+(winner<0?'EMPATE!':esc(st.names[winner]).toUpperCase()+' VENCEU!')+'</h2>'+
+  '<p>Vence o time que somar mais poder dos cinco personagens. Cada poder é a soma dos cinco atributos.</p>'+
+  '<div class="offline-score"><div><small>'+esc(st.names[0])+'</small><strong>'+totals[0]+'</strong><span>PODER TOTAL DO TIME</span></div><b>VS</b>'+
+  '<div><small>'+esc(st.names[1])+'</small><strong>'+totals[1]+'</strong><span>PODER TOTAL DO TIME</span></div></div></div>'+
+  '<div class="offline-compact-fights"><div class="battle-lane-head"><span>'+esc(st.names[0])+'</span>'+
+  '<span>5 PERSONAGENS VS 5 PERSONAGENS</span><span>'+esc(st.names[1])+'</span></div>'+fights+'</div>'+historyPanel()+
+  '<div class="offline-actions">'+btn('🔄 REVANCHE • 50 MOEDAS','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
+ $('offlineAgain').onclick=()=>{
+  if(!st)return;const names=[...st.names],directBot=st.directBot;
+  st={mode:'direct5v5',names,directBot,members:[],budgets:[50,50],
+    teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
+    current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
+    winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
+  sound('confirm');draw();
+ };
+ $('offlineHome').onclick=quit;
+}
+
 function battle(){
+  if(st.mode==='direct5v5'){directAuctionBattle();return;}
   timers();st.phase='battle';sound('victory');
   const scores=[0,0],total=[0,0];
   const fights=ATTR.map((attr,i)=>{
