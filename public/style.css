@@ -640,3 +640,54 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
   animation:none!important;
  }
 }
+
+/* V11 — 2v2 online / local: lobby de duplas e códigos */
+.duo-start-section{
+  padding:17px;margin-top:19px;border-radius:14px;
+  background:linear-gradient(135deg,#25163e,#121b37);
+  border:1px solid #b17fea70;box-shadow:inset 0 1px #be92f52c;
+}
+.duo-feature-title{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font:900 clamp(17px,2.7vw,24px)/1.1 'Barlow Condensed',Impact,sans-serif;
+  color:#f9ddff;letter-spacing:.6px;
+}
+.duo-feature-title span{font:900 9px 'DM Sans',sans-serif;color:#8ee9ff;border:1px solid #54c9f65c;border-radius:22px;padding:5px 8px;white-space:nowrap}
+.duo-start-section>p{font-size:11px;line-height:1.65;color:#bcb4d1}
+.duo-start-section #squadCreateBtn{margin:12px 0 14px}
+.duo-join-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,135px);gap:8px}
+.duo-join-fields input{min-width:0;letter-spacing:2px;text-transform:uppercase;font-weight:900}
+.duo-join-fields select{width:100%;min-width:0;padding:9px 5px;border-radius:8px;outline:none;border:1px solid #8e6aaf;background:#1c1a36;color:#fff;font-size:11px;font-weight:800}
+.duo-join-fields button{grid-column:1/-1}
+.squad-waiting{
+  border:1px solid #a878e4a1;background:linear-gradient(110deg,#261439,#122241);
+  border-radius:15px;padding:18px 15px;box-shadow:0 0 26px #7e4cc02c;
+}
+.squad-waiting-label{font-size:10px;color:#eab2ff;font-weight:900;letter-spacing:1px}
+.squad-waiting h3{font:900 clamp(26px,4.3vw,39px) 'Barlow Condensed',Impact,sans-serif;margin:8px 0}
+.squad-waiting h3 span{display:inline-block;color:#92e9ff;letter-spacing:3px;user-select:all}
+.squad-waiting>p{font-size:12px;line-height:1.6;color:#b4c5dc}
+.squad-waiting-actions{display:flex;flex-wrap:wrap;gap:9px;margin:13px 0 19px}
+.squad-waiting-actions .btn{flex:1;white-space:nowrap}
+.squad-lobby-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.squad-lobby-columns>div{border:1px solid #886caf66;padding:12px;background:#111a2fd4;border-radius:11px;min-width:0}
+.squad-lobby-columns h4{margin:0 0 10px;color:#eadbff;font-size:13px}
+.squad-lobby-columns h4 small{float:right;color:#8de5ff}
+.squad-members{display:grid;gap:7px}
+.squad-member{
+  padding:10px 8px;border-radius:8px;font-size:11px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;font-weight:800
+}
+.squad-member.filled{background:#8150bb30;border:1px solid #c090ff75;color:#f5eaff}
+.squad-member.empty{background:#1a213168;border:1px dashed #6a75956e;color:#8196b0}
+.squad-status{margin:17px 0 0;text-align:center;font-size:11px;color:#a4d9ff;font-weight:800}
+#localSquadBtn{min-width:min(100%,225px)}
+@media(max-width:480px){
+ .squad-waiting{padding:12px 9px}
+ .squad-lobby-columns{gap:6px}
+ .squad-lobby-columns>div{padding:8px}
+ .squad-member{font-size:10px}
+ .duo-join-fields{grid-template-columns:minmax(0,1fr) 105px;gap:5px}
+ .squad-waiting-actions{gap:5px}
+ .squad-waiting-actions .btn{font-size:10px;padding:10px 7px}
+}
