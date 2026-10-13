@@ -1,8 +1,13 @@
 {
   "name": "anime-draft-battle-multiplayer",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Anime Draft Battle: multiplayer online de leilão de personagens",
-  "scripts": { "start": "node server.js", "test": "node test.js" },
-  "engines": { "node": ">=20" }
+  "description": "Anime Draft Battle V1: arena de animes com 142 personagens, leilões virtuais e multiplayer",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
