@@ -5,7 +5,7 @@ const SESSION_KEY='anime_draft_session_v2';
 const saved=(()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY))||{}}catch{return {}}})();
 const model={socket:null,connected:false,name:saved.name||'',token:saved.token||makeToken(),logged:false,room:null,battle:null,invitation:null,online:[],roster:[]};
 const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v2'))||{}}catch{return {}}})();
-let photoQueue=[],photoBusy=false,toastTimer=null,gameTimers=[];
+let photoQueue=[],photoBusy=false,toastTimer=null,gameTimers=[],auctionClock=null;
 
 function makeToken(){
   const a=new Uint8Array(16);if(globalThis.crypto?.getRandomValues)crypto.getRandomValues(a);
@@ -77,37 +77,69 @@ function respond(accept){
 function photoURL(id){return typeof photoCache[id]==='string'?photoCache[id]:'';}
 function imageMarkup(person,extraClass=''){
   const url=photoURL(person.id);
-  return `<img class="character-img ${extraClass}" data-character="${safe(person.id)}" src="${safe(url)}" alt="Foto de ${safe(person.name)}" loading="lazy" ${url?'':'hidden'} onerror="this.hidden=true">`;
+  return `<img class="character-img ${extraClass}" data-character="${safe(person.id)}" src="${safe(url)}" alt="Retrato de ${safe(person.name)}" loading="eager" referrerpolicy="no-referrer" ${url?'':'hidden'} onerror="this.hidden=true">`;
+}
+// Matching images from Jikan's anime cast first, with a character search as fallback.
+// The queries are cached so the same photo doesn't require new requests every round.
+const MAL_ANIME={
+ 'Naruto':20,'Dragon Ball':223,'One Piece':21,'Bleach':269,'Demon Slayer':38000,
+ 'Jujutsu Kaisen':40748,'My Hero Academia':31964,'Attack on Titan':16498,
+ 'Black Clover':34572,'Chainsaw Man':44511,'One Punch Man':30276,
+ 'Tensei Shitara Slime':37430,'Maou Gakuin':40496,'Madoka Magica':9756
+};
+const castJobs=new Map();
+const pendingIDs=new Set();
+function normName(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');}
+function setImage(person,url){
+  if(!url || !/^https:\/\//i.test(url))return;
+  photoCache[person.id]=url;
+  pendingIDs.delete(person.id);
+  document.querySelectorAll('img[data-character="'+CSS.escape(person.id)+'"]').forEach(img=>{img.src=url;img.hidden=false;});
+  try{localStorage.setItem('anime_draft_photos_v2',JSON.stringify(photoCache));}catch{}
+}
+function matchImage(p,items){
+  const target=normName(p.name);if(!target)return;
+  const found=items.find(x=>{
+    const n=normName(x.name);
+    if(n===target)return true;
+    const backwards=String(x.name||'').split(',').map(y=>y.trim()).reverse().join(' ');
+    return normName(backwards)===target;
+  });
+  if(found) setImage(p, found.images?.jpg?.image_url||found.images?.webp?.image_url);
+}
+async function fetchJSON(url){
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),9500);
+  try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}
+  finally{clearTimeout(t);}
+}
+async function fetchAnimeCast(anime){
+  if(!MAL_ANIME[anime])return;
+  if(castJobs.has(anime))return castJobs.get(anime);
+  const job=fetchJSON('https://api.jikan.moe/v4/anime/'+MAL_ANIME[anime]+'/characters').then(body=>{
+    const items=(body.data||[]).map(x=>x.character).filter(Boolean);
+    const roster=window.ANIME_ROSTER||model.roster||[];
+    for(const p of roster.filter(x=>x.anime===anime))matchImage(p,items);
+  }).catch(()=>{});
+  castJobs.set(anime,job);return job;
 }
 function maybePhoto(person){
-  if(!person||Object.prototype.hasOwnProperty.call(photoCache,person.id))return;
-  if(photoQueue.some(x=>x.id===person.id))return;
-  photoQueue.push(person);drainPhotos();
+  if(!person || photoURL(person.id)||pendingIDs.has(person.id))return;
+  pendingIDs.add(person.id);photoQueue.unshift(person);drainPhotos();
 }
 async function drainPhotos(){
-  if(photoBusy||!photoQueue.length)return;
-  photoBusy=true;
+  if(photoBusy)return; photoBusy=true;
   while(photoQueue.length){
-    const p=photoQueue.shift();
-    if(Object.prototype.hasOwnProperty.call(photoCache,p.id))continue;
+    const p=photoQueue.pop();
+    if(photoURL(p.id)){pendingIDs.delete(p.id);continue;}
     try{
-      const q=encodeURIComponent(p.name);
-      const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),9000);
-      const res=await fetch('https://api.jikan.moe/v4/characters?q='+q+'&limit=8',{signal:controller.signal});clearTimeout(timeout);
-      if(res.ok){
-        const body=await res.json();const choices=body.data||[];
-        const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
-        const target=norm(p.name);
-        let best=choices.find(item=>norm(item.name)===target||norm(item.name).split(',').reverse().join('')===target)||choices[0];
-        const url=best?.images?.jpg?.image_url||best?.images?.webp?.image_url;
-        if(url&&/^https:\/\//.test(url)){
-          photoCache[p.id]=url;
-          document.querySelectorAll('img[data-character="'+CSS.escape(p.id)+'"]').forEach(img=>{img.src=url;img.hidden=false;});
-          try{localStorage.setItem('anime_draft_photos_v2',JSON.stringify(photoCache));}catch{}
-        }
+      await fetchAnimeCast(p.anime);
+      if(!photoURL(p.id)){
+        const body=await fetchJSON('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(p.name)+'&limit=12');
+        matchImage(p,body.data||[]);
       }
-    }catch(e){console.debug('Imagem indisponível:',p.name);}
-    await new Promise(r=>setTimeout(r,540));
+    }catch(e){console.debug('Imagem indisponível:',p.name,e.message);}
+    pendingIDs.delete(p.id);
+    await new Promise(resolve=>setTimeout(resolve,1100));
   }
   photoBusy=false;
 }
@@ -120,7 +152,19 @@ function powerSummary(p){
   return `<div class="power-summary" aria-label="Poder revelado de ${safe(p.name)}"><span>⚡ PODER TOTAL <strong>${p.power}</strong></span><div class="stat-row">${ATTR.map((a,i)=>`<span title="${safe(a)}">${safe(a.split(' ').slice(1).join(' '))} <b>${p.stats[i]}</b></span>`).join('')}</div></div>`;
 }
 function teamBoard(team,name){
-  return `<div class="team-board"><h4>${safe(name)}</h4>${ATTR.map((attr,i)=>{const p=team[i];if(p)maybePhoto(p);return `<div class="team-slot"><div class="mini-avatar">${p?`${safe(p.emoji)}${imageMarkup(p)}`:'?'}</div><div class="team-slot-info"><small>${attr}</small><b>${p?safe(p.name):'Aguardando...'}</b>${p?`<span class="primary-stat">${safe(attr)}: <strong>${p.stats[i]}</strong> / 100</span>${powerSummary(p)}`:''}</div></div>`}).join('')}</div>`;
+  const partial=team.reduce((sum,p,i)=>sum+(p?.stats?.[i]||0),0);
+  return `<div class="team-board"><h4>${safe(name)} <span class="team-running-total">⚡ ${partial} PTS</span></h4>${ATTR.map((attr,i)=>{const p=team[i];if(p)maybePhoto(p);return `<div class="team-slot"><div class="mini-avatar">${p?`${safe(p.emoji)}${imageMarkup(p)}`:'?'}</div><div class="team-slot-info"><small>${attr}</small><b>${p?safe(p.name):'Aguardando...'}</b>${p?`<span class="primary-stat">${safe(attr)}: <strong>${p.stats[i]}</strong> / 100</span>${powerSummary(p)}`:''}</div></div>`}).join('')}</div>`;
+}
+function updateAuctionTimer(){
+  const r=model.room;
+  if(!r||r.phase!=='auction'){clearInterval(auctionClock);auctionClock=null;return;}
+  const remain=Math.max(0,(r.deadline-Date.now())/1000);
+  $('secondsLeft').textContent=Math.ceil(remain);
+  $('timerFill').style.width=(remain*10)+'%';
+  $('timerFace').classList.toggle('urgent',remain<=3);
+  const myTurn=r.turn===r.you;
+  $('placeBid').disabled=!myTurn || r.minimum>r.budgets[r.you] || remain<=0;
+  $('passBid').disabled=!myTurn||remain<=0;
 }
 function renderArena(){
   show('arena');const r=model.room;if(!r)return;
@@ -129,36 +173,45 @@ function renderArena(){
   $('steps').innerHTML=Array.from({length:5},(_,i)=>`<span class="${i<r.round?'done':i===r.round?'active':''}"></span>`).join('');
   $('matchName0').textContent=r.names[0];$('matchName1').textContent=r.names[1];
   $('budget0').textContent=r.budgets[0];$('budget1').textContent=r.budgets[1];
-  $('arenaPhase').textContent=r.phase==='auction'?'LEILÃO AO VIVO':'LANCES REVELADOS';
-  $('auctionTitle').textContent=(r.phase==='auction'?'LEILÃO DE ':'VENCEDOR DO ')+ATTR[r.round];
-  $('auctionCaption').textContent=r.phase==='auction'?'Ambos apostam em segredo no DESTAQUE. Quem vencer paga o lance; o adversário recebe o RESERVA de graça.':'Personagens distribuídos! Seus poderes agora estão visíveis no time de cada jogador.';
+  $('arenaPhase').textContent=r.phase==='auction'?'LEILÃO DE 10 SEGUNDOS':'PODERES REVELADOS';
+  $('auctionTitle').textContent=(r.phase==='auction'?'LEILÃO DE ':'RESULTADO DE ')+ATTR[r.round];
+  $('auctionCaption').textContent=r.phase==='auction'?'Quem dá o maior lance leva o DESTAQUE. O rival tem 10 segundos para aumentar a oferta em 1 moeda ou desistir.':'O vencedor recebeu o destaque, e o outro jogador ficou com o reserva. Poderes revelados!';
   $('auctionPair').innerHTML=r.offered.map((c,i)=>characterCard(c,i===0?'highlight':'backup')).join('');
   $('teamBoards').innerHTML=r.teams.map((team,i)=>teamBoard(team,r.names[i])).join('');
-  $('biddingArea').hidden=r.phase!=='auction'||r.submitted[r.you];
-  $('awaitBid').hidden=r.phase!=='auction'||!r.submitted[r.you];
+  const isAuction=r.phase==='auction';
+  $('liveBidBanner').hidden=!isAuction;
+  $('biddingArea').hidden=!isAuction||r.turn!==r.you;
+  $('awaitBid').hidden=!isAuction||r.turn===r.you;
   $('reveal').hidden=r.phase!=='reveal';
+  $('currentBid').textContent=r.currentBid;
+  $('bidLeader').textContent=r.leader<0?'Ninguém ofereceu ainda. '+r.names[r.turn]+' começa.':r.names[r.leader]+' está ganhando com '+r.currentBid+' moeda(s).';
   $('budgetHint').textContent=myBudget;
-  const slider=$('bidSlider');slider.max=myBudget;slider.value=Math.min(myBudget,Math.max(0,Math.min(+slider.value||3,myBudget)));
-  $('bidMax').textContent=myBudget;$('bidValue').textContent=slider.value;
-  if(r.phase==='auction' && r.submitted[r.you]) $('waitingMessage').textContent=r.submitted[1-r.you]?'Lances recebidos. Calculando...':'Esperando o lance de '+r.names[1-r.you]+'...';
+  $('bidValue').textContent=r.minimum;
+  $('placeBid').textContent='⚡ OFERECER '+r.minimum+' MOEDA'+(r.minimum!==1?'S':'');
+  $('waitingMessage').textContent=r.names[r.turn]+' tem 10 segundos para cobrir o lance ou desistir.';
+  clearInterval(auctionClock);auctionClock=null;
+  if(isAuction){updateAuctionTimer();auctionClock=setInterval(updateAuctionTimer,125);}
   if(r.phase==='reveal' && r.result){
     const win=r.result.winner,they=win===r.you;
-    $('reveal').innerHTML=`<div class="section-eyebrow">RESULTADO DO LEILÃO</div><h3>${they?'🏆 VOCÊ GANHOU O DESTAQUE!':'⚔ '+safe(r.names[win]).toUpperCase()+' LEVOU O DESTAQUE'}</h3><p>${safe(r.names[win])} ganhou <b>${safe(r.result.offers[0].name)}</b> por 🪙 ${r.result.price}. ${safe(r.names[1-win])} recebeu <b>${safe(r.result.offers[1].name)}</b> gratuitamente.</p><div class="reveal-powers">${r.result.offers.map((p,i)=>`<div class="reveal-fighter"><span>${safe(p.emoji)} ${safe(p.name)}</span>${powerSummary(p)}</div>`).join('')}</div><p>Próximo leilão em instantes…</p>`;
+    $('reveal').innerHTML=`<div class="section-eyebrow">RESULTADO DO LEILÃO</div><h3>${they?'🏆 VOCÊ GANHOU O DESTAQUE!':'⚔ '+safe(r.names[win]).toUpperCase()+' LEVOU O DESTAQUE'}</h3><p>${safe(r.names[win])} ganhou <b>${safe(r.result.offers[0].name)}</b> por 🪙 ${r.result.price}. ${safe(r.names[1-win])} recebeu <b>${safe(r.result.offers[1].name)}</b> gratuitamente.</p><div class="reveal-powers">${r.result.offers.map(p=>`<div class="reveal-fighter"><span>${safe(p.emoji)} ${safe(p.name)}</span>${powerSummary(p)}</div>`).join('')}</div><p>Próximo leilão em instantes…</p>`;
   }
 }
 function submitBid(){
-  const r=model.room;if(!r||r.phase!=='auction'||r.submitted[r.you])return;
-  const amount=+$('bidSlider').value;
-  if(send('bid',{amount})){$('placeBid').disabled=true;setTimeout(()=>$('placeBid').disabled=false,800);}
+  const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you)return;
+  if(send('bid',{amount:r.minimum})){$('placeBid').disabled=true;}
 }
-function cancelTimers(){gameTimers.forEach(t=>clearTimeout(t));gameTimers=[];}
+function giveUpBid(){
+  const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you)return;
+  if(send('pass')){$('passBid').disabled=true;}
+}
+function cancelTimers(){clearInterval(auctionClock);auctionClock=null;gameTimers.forEach(t=>clearTimeout(t));gameTimers=[];}
 function renderBattle(data){
   cancelTimers();show('battle');
   $('battleName0').textContent=data.names[0];$('battleName1').textContent=data.names[1];
   $('winnerTitle').textContent=data.winner<0?'EMPATE ÉPICO!':data.names[data.winner].toUpperCase()+' VENCEU!';
-  $('winnerSubtitle').textContent='Força • Resistência • QI • Habilidade • Velocidade';
-  $('battleScore0').textContent=data.scores[0];$('battleScore1').textContent=data.scores[1];
-  $('battleTotal0').textContent=data.totals[0]+' pontos';$('battleTotal1').textContent=data.totals[1]+' pontos';
+  $('winnerSubtitle').textContent='🏆 O maior TOTAL dos 5 atributos vence • Força + Resistência + QI + Habilidade + Velocidade';
+  $('battleScore0').textContent=data.totals[0];$('battleScore1').textContent=data.totals[1];
+  $('battleTotal0').textContent=data.scores[0]+' categorias vencidas';$('battleTotal1').textContent=data.scores[1]+' categorias vencidas';
   $('battleRows').replaceChildren();
   const baseDelay=Math.max(0,(data.startAt||Date.now())-Date.now());
   data.details.forEach((item,i)=>{
@@ -171,7 +224,7 @@ function renderBattle(data){
 }
 async function copyResult(){
   const b=model.battle;if(!b)return;
-  const txt=`⚔ ANIME DRAFT BATTLE\n${b.names[0]} ${b.scores[0]} x ${b.scores[1]} ${b.names[1]}\n${b.details.map(x=>x.attribute+': '+x.fighters[0].value+' x '+x.fighters[1].value).join('\n')}\n🏆 ${b.winner<0?'Empate':b.names[b.winner]}`;
+  const txt=`⚔ ANIME DRAFT BATTLE\n${b.names[0]} ${b.totals[0]} x ${b.totals[1]} ${b.names[1]}\n${b.details.map(x=>x.attribute+': '+x.fighters[0].value+' x '+x.fighters[1].value).join('\n')}\n🏆 ${b.winner<0?'Empate':b.names[b.winner]}`;
   try{await navigator.clipboard.writeText(txt);toast('Resultado copiado!')}catch{toast('Não foi possível copiar automaticamente.');}
 }
 function backLobby(){cancelTimers();send('leave');model.room=null;model.battle=null;renderLobby();show('lobby');}
@@ -183,7 +236,7 @@ $('friendName').addEventListener('keydown',e=>{if(e.key==='Enter')inviteFriend()
 $('acceptBtn').addEventListener('click',()=>respond(true));
 $('declineBtn').addEventListener('click',()=>respond(false));
 $('botBtn').addEventListener('click',()=>send('bot'));
-$('bidSlider').addEventListener('input',()=>{$('bidValue').textContent=$('bidSlider').value;});
+$('passBid').addEventListener('click',giveUpBid);
 $('placeBid').addEventListener('click',submitBid);
 $('leaveMatch').addEventListener('click',()=>{if(confirm('Sair da partida? Seu adversário também voltará ao lobby.'))backLobby();});
 $('goLobby').addEventListener('click',backLobby);
