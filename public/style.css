@@ -872,3 +872,15 @@ body:has(#offline:not([hidden]) .offline-final) .container{max-width:1050px}
  .special-battle-score strong{font-size:35px}
 }
 @media(prefers-reduced-motion:reduce){.roulette-wheel{animation:none}}
+
+/* V12.1 — acesso sem bloqueio caso o multiplayer não conecte */
+.arena-connection-notice{
+  display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;
+  padding:14px;border-radius:12px;
+  border:1px solid #a5bcfa75;
+  background:linear-gradient(110deg,#142c47,#231a3c);
+}
+.arena-notice-icon{font-size:23px;line-height:1.25}
+.arena-connection-notice strong{display:block;font-size:12px;color:#bcecff;letter-spacing:.5px}
+.arena-connection-notice p{color:#d0d7e6;font-size:11px;line-height:1.55;margin:5px 0 0}
+#loginBtn:disabled{opacity:.7}
