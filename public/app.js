@@ -8,7 +8,7 @@ function rarityBadge(p){
  if(!p?.rarity)return '';
  return '<span class="rarity-chip rarity-'+(RARITY_CSS[p.rarity]||'common')+'">✦ '+safe(p.rarity)+(p.rating?' · '+p.rating:'')+'</span>';
 }
-let soundEnabled=(()=>{try{return localStorage.getItem('anime_draft_sound_v10')!=='off';}catch{return true}})(),audioContext=null;
+let soundEnabled=(()=>{try{return localStorage.getItem('anime_draft_sound_v10')!=='off';}catch{return true}})(),audioContext=null,lastClockBeep='';
 function soundUI(){
  const button=$('soundToggle');if(!button)return;
  button.textContent=soundEnabled?'🔊 SOM ON':'🔇 SOM OFF';
@@ -23,7 +23,7 @@ function playAnimeSfx(type){
   const song={
    bid:[[490,.08],[650,.10]],avoid:[[260,.12],[190,.14]],
    place:[[420,.10],[610,.11],[880,.16]],victory:[[440,.14],[590,.14],[740,.14],[1050,.25]],
-   impact:[[170,.09],[100,.17]],confirm:[[510,.11],[690,.15]]
+   impact:[[170,.09],[100,.17]],confirm:[[510,.11],[690,.15]],tick:[[810,.07]]
   }[type]||[[510,.12]];
   let delay=0;
   for(const [frequency,length] of song){
@@ -277,7 +277,12 @@ function updateAuctionTimer(){
   const r=model.room;
   if(!r||r.phase!=='auction'){clearInterval(auctionClock);auctionClock=null;return;}
   const remain=Math.max(0,(r.deadline-Date.now())/1000);
-  $('secondsLeft').textContent=Math.ceil(remain);
+  const currentSecond=Math.ceil(remain);
+  if(currentSecond>0&&currentSecond<=3&&r.turn===r.you){
+    const key=[r.roomId,r.round,r.deadline,currentSecond].join('-');
+    if(lastClockBeep!==key){lastClockBeep=key;playAnimeSfx('tick');}
+  }
+  $('secondsLeft').textContent=currentSecond;
   $('timerFill').style.width=(remain*10)+'%';
   $('timerFace').classList.toggle('urgent',remain<=3);
   const myTurn=r.turn===r.you;
@@ -340,6 +345,7 @@ function renderArena(){
   if(isReveal&&r.result){
     const win=r.result.winner,me=win===r.you,f=r.result.fighter;
     maybePhoto(f);
+    if(f.rarity==='Mítico')playAnimeSfx('victory');
     $('reveal').innerHTML='<div class="section-eyebrow">🎯 ATRIBUTO ESCOLHIDO: '+ATTR[r.result.slot]+'</div><h3>'+(me?'🏆 VOCÊ GANHOU!':'⚔ '+safe(r.names[win]).toUpperCase()+' GANHOU!')+'</h3><p>'+safe(r.names[win])+' colocou <b>'+safe(f.name)+'</b> em <b>'+ATTR[r.result.slot]+'</b> por 🪙 '+r.result.price+'. Agora os poderes estão revelados.</p><div class="reveal-portrait">'+safe(f.emoji)+imageMarkup(f)+'</div>'+powerSummary(f)+'<p>O próximo personagem pode ser ainda mais forte!</p>';
   }
 }
