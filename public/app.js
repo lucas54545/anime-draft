@@ -4,7 +4,7 @@ const ATTR=['⚔️ FORÇA','🛡️ RESISTÊNCIA','🧠 QI','✨ HABILIDADE','�
 const SESSION_KEY='anime_draft_session_v2';
 const saved=(()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY))||{}}catch{return {}}})();
 const model={socket:null,connected:false,name:saved.name||'',token:saved.token||makeToken(),logged:false,room:null,battle:null,invitation:null,online:[],roster:[]};
-const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v2'))||{}}catch{return {}}})();
+const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v8'))||{}}catch{return {}}})();
 let photoQueue=[],photoBusy=false,toastTimer=null,gameTimers=[],auctionClock=null;
 
 function makeToken(){
@@ -74,7 +74,7 @@ function respond(accept){
   const invitation=model.invitation;
   if(send('respond',{id:invitation.id,accept})){model.invitation=null;renderInvitations();}
 }
-function photoURL(id){return typeof photoCache[id]==='string'?photoCache[id]:'';}
+function photoURL(id){return id==='satan'?'':typeof photoCache[id]==='string'?photoCache[id]:'';}
 const placeholderCache={};
 function portraitFallback(person){
   if(placeholderCache[person.id])return placeholderCache[person.id];
@@ -88,7 +88,7 @@ function portraitFallback(person){
 function imageMarkup(person,extraClass=''){
   if(!person||!person.id)return '';
   const fallback=portraitFallback(person);
-  const real=photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id)+'?v=7');
+  const real=person.id==='satan'?(location.protocol==='file:'?'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png':'/api/portrait/satan?v=8'):photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id)+'?v=8');
   const url=real||fallback;
   return '<img class="character-img '+safe(extraClass)+'" data-character="'+safe(person.id)+'" data-fallback="'+safe(fallback)+'" src="'+safe(url)+'" alt="Retrato de '+safe(person.name)+'" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=this.dataset.fallback">';
 }
@@ -109,7 +109,7 @@ function setImage(person,url){
   photoCache[person.id]=url;
   pendingIDs.delete(person.id);
   document.querySelectorAll('img[data-character="'+CSS.escape(person.id)+'"]').forEach(img=>{img.src=url;img.hidden=false;});
-  try{localStorage.setItem('anime_draft_photos_v2',JSON.stringify(photoCache));}catch{}
+  try{localStorage.setItem('anime_draft_photos_v8',JSON.stringify(photoCache));}catch{}
 }
 function matchImage(p,items){
   const acceptable=new Set([p.name,...(NAME_ALIASES[p.id]||[])].map(normName));
@@ -132,7 +132,7 @@ async function fetchAnimeCast(anime){
   castJobs.set(anime,job);return job;
 }
 function maybePhoto(person){
-  if(!person || photoURL(person.id)||pendingIDs.has(person.id))return;
+  if(!person || person.id==='satan' || photoURL(person.id)||pendingIDs.has(person.id))return;
   pendingIDs.add(person.id);photoQueue.unshift(person);drainPhotos();
 }
 async function drainPhotos(){
@@ -162,7 +162,17 @@ function powerSummary(p){
 }
 function teamBoard(team,name){
   const partial=team.reduce((sum,p,i)=>sum+(p?.stats?.[i]||0),0);
-  return `<div class="team-board"><h4>${safe(name)} <span class="team-running-total">⚡ ${partial} PTS</span></h4>${ATTR.map((attr,i)=>{const p=team[i];if(p)maybePhoto(p);return `<div class="team-slot"><div class="mini-avatar">${p?`${safe(p.emoji)}${imageMarkup(p)}`:'?'}</div><div class="team-slot-info"><small>${attr}</small><b>${p?safe(p.name):'Aguardando...'}</b>${p?`<span class="primary-stat">${safe(attr)}: <strong>${p.stats[i]}</strong> / 100</span>${powerSummary(p)}`:''}</div></div>`}).join('')}</div>`;
+  return '<div class="team-board compact-team"><h4>'+safe(name)+
+    '<span class="team-running-total">⚡ '+partial+' PTS</span></h4>'+
+    ATTR.map((attr,i)=>{
+      const p=team[i];
+      if(p)maybePhoto(p);
+      return '<div class="team-slot compact-slot">'+
+        '<div class="mini-avatar">'+(p?imageMarkup(p):'?')+'</div>'+
+        '<div class="team-slot-info"><small>'+safe(attr)+'</small>'+
+        '<b>'+(p?safe(p.name):'Vazio')+'</b></div>'+
+        '<strong class="slot-score">'+(p?p.stats[i]:'—')+'</strong></div>';
+    }).join('')+'</div>';
 }
 function updateAuctionTimer(){
   const r=model.room;
@@ -245,16 +255,19 @@ function cancelTimers(){clearInterval(auctionClock);auctionClock=null;gameTimers
 function renderBattle(data){
   cancelTimers();show('battle');
   $('battleName0').textContent=data.names[0];$('battleName1').textContent=data.names[1];
-  $('winnerTitle').textContent=data.winner<0?'EMPATE ÉPICO!':data.names[data.winner].toUpperCase()+' VENCEU!';
-  $('winnerSubtitle').textContent='Maior soma dos cinco atributos vence';
+  $('winnerTitle').textContent=data.winner<0?'EMPATE!':data.names[data.winner].toUpperCase()+' VENCEU!';
+  $('winnerSubtitle').textContent='Vence quem somar mais pontos nos 5 atributos';
   $('battleScore0').textContent=data.totals[0];$('battleScore1').textContent=data.totals[1];
-  $('battleTotal0').textContent=data.scores[0]+' categorias vencidas';$('battleTotal1').textContent=data.scores[1]+' categorias vencidas';
-  $('battleRows').replaceChildren();
-  // Mostrar os cinco confrontos juntos, sem animação que exija rolagem.
+  $('battleTotal0').textContent=data.scores[0]+' atributos vencidos';
+  $('battleTotal1').textContent=data.scores[1]+' atributos vencidos';
+  const root=$('battleRows');root.replaceChildren();
+  // Um duelo = só imagem pequena, nome e pontuação do atributo escolhido, em lados opostos.
   data.details.forEach((item,i)=>{
-      const row=document.createElement('div');row.className='battle-row';
-      row.innerHTML=`<h3>${ATTR[i]}</h3><div class="duel-grid">${item.fighters.map((p,j)=>{maybePhoto(p);return `<div class="duelist ${item.winner===j?'win':''}"><div class="mini-avatar">${safe(p.emoji)}${imageMarkup(p)}</div><div style="flex:1;min-width:0"><small>${safe(p.name)}</small><strong>${p.value} PTS ${item.winner===j?'🏆':''}</strong><div class="power-bar"><span style="width:${p.value}%"></span></div></div></div>`;}).join('')}</div>`;
-      $('battleRows').append(row);
+    const [left,right]=item.fighters;
+    maybePhoto(left);maybePhoto(right);
+    const row=document.createElement('div');row.className='battle-row anime-versus-row';
+    row.innerHTML=`<div class="versus-side left ${item.winner===0?'win':''}"><div class="duel-face">${imageMarkup(left)}</div><span class="duel-person">${safe(left.name)}</span><b class="duel-score">${left.value}</b></div><div class="versus-center"><small>ROUND ${String(i+1).padStart(2,'0')}</small><strong>${safe(ATTR[i])}</strong></div><div class="versus-side right ${item.winner===1?'win':''}"><b class="duel-score">${right.value}</b><span class="duel-person">${safe(right.name)}</span><div class="duel-face">${imageMarkup(right)}</div></div>`;
+    root.append(row);
   });
 }
 async function copyResult(){
