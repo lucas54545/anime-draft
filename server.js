@@ -13,6 +13,7 @@ const ATTRS = ['Força', 'Resistência', 'QI', 'Habilidade', 'Velocidade'];
 const users = new Map();    // token -> {token,name,conn,roomId}
 const rooms = new Map();    // id -> active room
 const invites = new Map();  // id -> invitation
+const squadLobbies = new Map(); // six-character code -> waiting four-player room
 const clients = new Set();
 const id = () => crypto.randomBytes(10).toString('hex');
 const publicFighter = c => ({id: c.id, name: c.name, anime: c.anime, emoji: c.emoji});
@@ -27,14 +28,24 @@ function issue(user, data) { if (user && user.conn) send(user.conn, data); }
 function error(ws, message) { send(ws, {type: 'error', message}); }
 function userFor(ws) { return ws.user && users.get(ws.user.token) === ws.user ? ws.user : null; }
 function whoOnline() {
-  return [...users.values()].filter(u => u.conn).map(u => ({name:u.name, busy:!!u.roomId}));
+  return [...users.values()].filter(u => u.conn).map(u => ({name:u.name, busy:!!(u.roomId||u.squadCode)}));
 }
 function presence() { const payload={type:'presence',players:whoOnline()}; for (const u of users.values()) issue(u,payload); }
-function syncRoom(room) { for (let i=0;i<2;i++) issue(room.players[i], roomView(room,i)); }
+function teamNames(room){
+  if(room.mode!=='squad')return [room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'];
+  return [0,1].map(side=>[room.players[side]?.name,room.players[side+2]?.name].filter(Boolean).join(' + '));
+}
+function syncRoom(room){
+  for(let i=0;i<room.players.length;i++){
+    const p=room.players[i];
+    if(p)issue(p,roomView(room,room.mode==='squad'?i%2:i));
+  }
+}
 function roomView(room, idx) {
   return {
     type:'room',roomId:room.id,mode:room.mode,phase:room.phase,round:room.round,
-    names:room.players.map((u,i)=>u?.name||(i===1?'BOT':'Jogador')),
+    names:teamNames(room),
+    members:room.mode==='squad'?room.players.map(p=>p?.name||'Jogador'):null,
     you:idx,budgets:room.budgets,
     teams:room.teams.map(t=>t.map(c=>c?acquiredFighter(CHAR[c]):null)),
     offered:room.offer.map(c=>publicFighter(CHAR[c])),
@@ -69,11 +80,12 @@ function chooseOffer(room){
   room.phase='auction';room.result=null;room.pending=null;room.placer=-1;
   scheduleTurn(room);
 }
-function makeRoom(p1,p2,mode){
-  const room={id:id(),players:[p1,p2],mode,round:0,phase:'auction',budgets:[20,20],
+function makeRoom(p1,p2,mode,extraPlayers=[]){
+  const room={id:id(),players:mode==='squad'?[p1,p2,...extraPlayers]:[p1,p2],mode,round:0,phase:'auction',budgets:[20,20],
     teams:[Array(5).fill(null),Array(5).fill(null)],offer:[],currentBid:0,bidMode:null,leader:-1,turn:0,deadline:0,
     result:null,timer:null,botTimer:null,placer:-1,pending:null,pendingPrice:0,pendingAvoider:-1,pendingReason:'',history:[],rematchVotes:new Set()};
-  rooms.set(room.id,room);p1.roomId=room.id;if(p2)p2.roomId=room.id;
+  rooms.set(room.id,room);
+  for(const p of room.players)if(p){p.roomId=room.id;p.squadCode=null;}
   chooseOffer(room);syncRoom(room);presence();return room;
 }
 // Sem lance inicial não existe "pegar grátis": o cronômetro apenas passa a vez.
@@ -175,7 +187,7 @@ function finishBattle(room){
   }
   const totals=[0,1].map(side=>room.teams[side].reduce((sum,c,i)=>sum+CHAR[c].stats[i],0));
   const winner=totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1;
-  const payload={type:'battle',victoryRule:'total',names:[room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'],
+  const payload={type:'battle',mode:room.mode,victoryRule:'total',names:teamNames(room),members:room.mode==='squad'?room.players.map(p=>p?.name):null,
     scores,totals,winner,details,budgets:room.budgets,history:room.history,roomId:room.id,startAt:Date.now()+1400};
   for(const u of room.players)issue(u,payload);
   room.battle=payload;presence();
@@ -197,6 +209,58 @@ function cleanRoom(room) {
   for (const u of room.players) if(u&&u.roomId===room.id){u.roomId=null;issue(u,{type:'left_room'});}
   presence();
 }
+const SQUAD_CODE_ALPHABET='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function generateSquadCode(){
+  for(let n=0;n<30;n++){
+    const bytes=crypto.randomBytes(6);
+    const code=[...bytes].map(b=>SQUAD_CODE_ALPHABET[b%SQUAD_CODE_ALPHABET.length]).join('');
+    if(!squadLobbies.has(code))return code;
+  }
+  throw new Error('Não foi possível gerar código da sala.');
+}
+function lobbyPayload(lobby){
+  return {type:'squad_lobby',code:lobby.code,owner:lobby.host,
+    members:lobby.members.map(m=>({name:users.get(m.token)?.name||'Jogador',side:m.side})),
+    count:lobby.members.length,required:4};
+}
+function syncSquadLobby(lobby){
+  const payload=lobbyPayload(lobby);
+  for(const m of lobby.members)issue(users.get(m.token),payload);
+}
+function removeSquadLobbyMember(user){
+  if(!user?.squadCode)return;
+  const lobby=squadLobbies.get(user.squadCode),code=user.squadCode;
+  user.squadCode=null;
+  if(!lobby)return;
+  const isHost=lobby.host===user.token;
+  if(isHost){
+    squadLobbies.delete(code);
+    for(const member of lobby.members){
+      const u=users.get(member.token);
+      if(u){u.squadCode=null;issue(u,{type:'squad_left',reason:'O criador encerrou a sala 2v2.'});}
+    }
+  }else{
+    lobby.members=lobby.members.filter(m=>m.token!==user.token);
+    syncSquadLobby(lobby);
+  }
+  presence();
+}
+function addSquadMember(user,lobby,side){
+  const count=lobby.members.filter(m=>m.side===side).length;
+  if(count>=2)return false;
+  lobby.members.push({token:user.token,side});
+  user.squadCode=lobby.code;
+  syncSquadLobby(lobby);presence();
+  if(lobby.members.length===4){
+    const ordered=[0,1].flatMap(team=>lobby.members.filter(m=>m.side===team).map(m=>users.get(m.token)));
+    // Formato interno: [dupla A integrante 1, dupla B integrante 1, dupla A integrante 2, dupla B integrante 2].
+    const players=[ordered[0],ordered[2],ordered[1],ordered[3]];
+    squadLobbies.delete(lobby.code);
+    for(const p of players)p.squadCode=null;
+    makeRoom(players[0],players[1],'squad',[players[2],players[3]]);
+  }
+  return true;
+}
 function findByName(name) {return [...users.values()].find(u=>u.name.toLowerCase()===String(name).trim().toLowerCase()&&u.conn);}
 function clearPending(user) { for(const [key,inv] of invites)if(inv.to===user.token||inv.from===user.token)invites.delete(key); }
 function message(ws, data) {
@@ -216,16 +280,17 @@ function message(ws, data) {
     else {user={token,name,conn:ws,roomId:null}; users.set(token,user);}
     ws.user=user;
     send(ws,{type:'welcome',name,online:whoOnline()});
-    if(user.roomId){const r=rooms.get(user.roomId); if(r){ const side=r.players.findIndex(p=>p?.token===token);if(side>=0){if(r.phase==='battle')send(ws,r.battle);else send(ws,roomView(r,side));} }else user.roomId=null;}
+    if(user.roomId){const r=rooms.get(user.roomId); if(r){ const side=r.players.findIndex(p=>p?.token===token);if(side>=0){if(r.phase==='battle')send(ws,r.battle);else send(ws,roomView(r,r.mode==='squad'?side%2:side));} }else user.roomId=null;}
+    if(user.squadCode){const waiting=squadLobbies.get(user.squadCode);if(waiting)send(ws,lobbyPayload(waiting));else user.squadCode=null;}
     presence();return;
   }
   const user=userFor(ws);if(!user)return error(ws,'Digite seu nome para entrar.');
   if(kind==='invite'){
-    if(user.roomId)return error(ws,'Você já está em uma batalha.');
+    if(user.roomId||user.squadCode)return error(ws,'Você já está em uma sala ou batalha.');
     const recipient=findByName(data.to);
     if(!recipient)return error(ws,'Amigo não encontrado. Ele precisa estar online com esse nome.');
     if(recipient.token===user.token)return error(ws,'Você não pode desafiar a si mesmo.');
-    if(recipient.roomId)return error(ws,'Esse amigo já está em uma batalha.');
+    if(recipient.roomId||recipient.squadCode)return error(ws,'Esse amigo já está em uma sala ou batalha.');
     const inv={id:id(),from:user.token,to:recipient.token,expires:Date.now()+120000};
     invites.set(inv.id,inv);issue(recipient,{type:'invite_received',id:inv.id,from:user.name});
     issue(user,{type:'invite_sent',to:recipient.name});return;
@@ -236,19 +301,43 @@ function message(ws, data) {
     invites.delete(inv.id);
     const challenger=users.get(inv.from);
     if(data.accept!==true){issue(challenger,{type:'invite_declined',from:user.name});return;}
-    if(!challenger?.conn||challenger.roomId||user.roomId)return error(ws,'Um dos jogadores não está disponível.');
+    if(!challenger?.conn||challenger.roomId||user.roomId||challenger.squadCode||user.squadCode)return error(ws,'Um dos jogadores não está disponível.');
     clearPending(user);clearPending(challenger);
     makeRoom(challenger,user,'online');return;
   }
   if(kind==='bot'){
-    if(user.roomId)return error(ws,'Saia da partida atual antes de começar outra.');
+    if(user.roomId||user.squadCode)return error(ws,'Saia da sala atual antes de começar outra.');
     makeRoom(user,null,'bot');return;
+  }
+  if(kind==='squad_create'){
+    if(user.roomId||user.squadCode)return error(ws,'Saia da sala atual antes de criar outra.');
+    const code=generateSquadCode();
+    const lobby={code,host:user.token,members:[{token:user.token,side:0}],created:Date.now()};
+    squadLobbies.set(code,lobby);user.squadCode=code;
+    syncSquadLobby(lobby);presence();return;
+  }
+  if(kind==='squad_join'){
+    if(user.roomId||user.squadCode)return error(ws,'Saia da sala atual antes de entrar em outra.');
+    const code=String(data.code||'').trim().toUpperCase();
+    if(!/^[A-Z2-9]{6}$/.test(code))return error(ws,'Código 2v2 inválido. Digite os 6 caracteres da sala.');
+    const lobby=squadLobbies.get(code);
+    if(!lobby)return error(ws,'Sala 2v2 não encontrada. Confira o código.');
+    if(lobby.members.length>=4)return error(ws,'A sala 2v2 já está cheia.');
+    const side=Number(data.side);
+    if(![0,1].includes(side))return error(ws,'Escolha a dupla A ou B.');
+    if(!addSquadMember(user,lobby,side))return error(ws,'Essa dupla já está cheia. Escolha a outra.');
+    return;
+  }
+  if(kind==='squad_leave'){
+    if(user.squadCode){removeSquadLobbyMember(user);issue(user,{type:'squad_left',reason:'Você saiu da sala 2v2.'});}
+    return;
   }
   if(kind==='bid'){
     const room=rooms.get(user.roomId);
     if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
-    const idx=room.players.findIndex(p=>p?.token===user.token);
-    if(idx<0||idx!==room.turn)return error(ws,'Espere a sua vez de dar o lance.');
+    const playerIdx=room.players.findIndex(p=>p?.token===user.token);
+    const idx=room.mode==='squad'?playerIdx%2:playerIdx;
+    if(playerIdx<0||idx!==room.turn)return error(ws,'Espere a vez da sua dupla para dar o lance.');
     if(Date.now()>room.deadline){expireAuctionTurn(room);return error(ws,'Os 10 segundos acabaram.');}
     const amount=Number(data.amount);
     if(!raiseBid(room,idx,amount))return error(ws,'Lance inválido. Confira a modalidade e seu saldo.');
@@ -257,8 +346,9 @@ function message(ws, data) {
   if(kind==='pass'){
     const room=rooms.get(user.roomId);
     if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
-    const idx=room.players.findIndex(p=>p?.token===user.token);
-    if(idx!==room.turn)return error(ws,'Ainda não é sua vez.');
+    const playerIdx=room.players.findIndex(p=>p?.token===user.token);
+    const idx=room.mode==='squad'?playerIdx%2:playerIdx;
+    if(playerIdx<0||idx!==room.turn)return error(ws,'Ainda não é a vez da sua dupla.');
     // Não é possível pegar grátis/desistir antes de o primeiro lance ser dado.
     if(room.bidMode===null||room.leader<0)return error(ws,'O leilão precisa de pelo menos um lance antes de aceitar ou desistir.');
     if(Date.now()>room.deadline){expireAuctionTurn(room);return;}
@@ -266,8 +356,9 @@ function message(ws, data) {
   }
   if(kind==='place'){
     const room=rooms.get(user.roomId);
-    const idx=room?.players.findIndex(p=>p?.token===user.token);
-    if(!room||idx<0||!placeCharacter(room,idx,Number(data.slot)))return error(ws,'Escolha uma posição livre do seu time.');
+    const playerIdx=room?.players.findIndex(p=>p?.token===user.token);
+    const idx=room?.mode==='squad'?playerIdx%2:playerIdx;
+    if(!room||playerIdx<0||!placeCharacter(room,idx,Number(data.slot)))return error(ws,'Escolha uma posição livre do seu time.');
     return;
   }
   if(kind==='rematch'){
@@ -277,12 +368,14 @@ function message(ws, data) {
     if(side<0)return error(ws,'Você não faz parte dessa partida.');
     if(!room.rematchVotes)room.rematchVotes=new Set();
     room.rematchVotes.add(side);
-    const ready=room.mode==='bot'||(room.rematchVotes.has(0)&&room.rematchVotes.has(1));
+    const needed=room.mode==='squad'?4:2;
+    const ready=room.mode==='bot'||room.rematchVotes.size===needed;
     if(ready){restartRoom(room);}
-    else for(const u of room.players)issue(u,{type:'rematch_status',voted:room.rematchVotes.size,needed:2});
+    else for(const u of room.players)issue(u,{type:'rematch_status',voted:room.rematchVotes.size,needed});
     return;
   }
   if(kind==='leave'){
+    if(user.squadCode)removeSquadLobbyMember(user);
     const room=rooms.get(user.roomId);if(room)cleanRoom(room);
     return;
   }
