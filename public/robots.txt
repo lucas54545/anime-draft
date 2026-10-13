@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://anime-draft-8jkx.onrender.com/sitemap.xml
