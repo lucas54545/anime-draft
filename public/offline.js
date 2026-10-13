@@ -95,7 +95,9 @@ function draw(){
 function updateClock(){
   if(!st||st.phase!=='auction')return;
   const left=Math.max(0,(st.deadline-Date.now())/1000);
-  if($('localSeconds'))$('localSeconds').textContent=Math.ceil(left);
+  const second=Math.ceil(left);
+  if(second>0&&second<=3&&st.lastBeepSecond!==second){st.lastBeepSecond=second;sound('tick');}
+  if($('localSeconds'))$('localSeconds').textContent=second;
   if($('localTimerBar'))$('localTimerBar').style.width=left*10+'%';
   if($('localSeconds'))$('localSeconds').classList.toggle('urgent-text',left<=3);
   if($('localRaise'))$('localRaise').disabled=left<=0||st.bidMode==='avoid'||st.bid+1>st.budgets[st.turn];
@@ -111,7 +113,7 @@ function expireAuctionTurn(){
     // Só se ninguém puder dar lance é necessário distribuir sem custo.
     endBid('nenhum lance possível');return;
   }
-  st.deadline=Date.now()+10000;
+  st.deadline=Date.now()+10000;st.lastBeepSecond=10;
   auction();schedule();
 }
 function schedule(){
@@ -187,7 +189,7 @@ function choose(){
 function chooseSlot(slot){
   if(!st||st.phase!=='choose'||!free(st.winner).includes(slot))return;
   timers();st.phase='reveal';st.teams[st.winner][slot]=st.current;
-  const p=st.current;sound('place');
+  const p=st.current;sound('place');if(p.rarity==='Mítico')sound('victory');
   st.history.push({round:st.round+1,character:{id:p.id,name:p.name},winner:st.winner,price:st.price,slot,rarity:p.rarity,rating:p.rating});
   root().innerHTML=heading('PODER REVELADO!','O personagem entrou na posição escolhida. Agora os números aparecem.')+
     '<div class="offline-winner"><span>🎯 POSIÇÃO ESCOLHIDA: '+ATTR[slot]+'</span><h3>'+esc(p.name)+'</h3><p>'+esc(st.names[st.winner])+' colocou o personagem. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Pagou 🪙 '+st.price+'.')+'</p></div>'+
@@ -204,7 +206,7 @@ function battle(){
     const x=a?.stats?.[i]??0,y=b?.stats?.[i]??0;
     total[0]+=x;total[1]+=y;
     if(x>y)scores[0]++;else if(y>x)scores[1]++;
-    return '<div class="offline-fight offline-fight-v9">'+
+    return '<div class="offline-fight offline-fight-v9" style="--battle-delay:'+(i*85)+'ms">'+
       '<div class="versus-text left '+(x>y?'win':'')+'"><small>JOGADOR 1</small><b>'+(a?esc(a.name):'—')+'</b><strong>'+x+'</strong></div>'+
       '<div class="versus-middle"><div class="middle-photos"><div class="mid-photo '+(x>y?'win':'')+'">'+(a?portrait(a):'?')+'</div><div class="mid-vs-wrap"><span>VS</span><em>'+attr+'</em></div><div class="mid-photo '+(y>x?'win':'')+'">'+(b?portrait(b):'?')+'</div></div></div>'+
       '<div class="versus-text right '+(y>x?'win':'')+'"><small>JOGADOR 2</small><b>'+(b?esc(b.name):'—')+'</b><strong>'+y+'</strong></div></div>';
