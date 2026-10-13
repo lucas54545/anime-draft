@@ -283,6 +283,50 @@ const PICTURE_ALIASES={satan:['Hercule','Mr. Satan','Mister Satan'],
   okarun:['Ken Takakura','Okarun'],cc:['C.C.'],mob:['Shigeo Kageyama','Mob'],
   jinwoo:['Sung Jinwoo','Jin-Woo Sung'],frierenstark:['Stark'],lawliet:['L Lawliet','L'],
   deku:['Izuku Midoriya'],goku:['Son Goku'],light:['Light Yagami'],ash:['Satoshi','Ash Ketchum']};
+// Cache de elencos por anime: uma consulta atende vários personagens do jogo.
+const JIKAN_ANIME_IDS={
+ 'Naruto':20,'Dragon Ball':223,'One Piece':21,'Bleach':269,'Demon Slayer':38000,
+ 'Jujutsu Kaisen':40748,'My Hero Academia':31964,'Attack on Titan':16498,
+ 'Black Clover':34572,'Chainsaw Man':44511,'One Punch Man':30276,
+ 'Tensei Shitara Slime':37430,'Maou Gakuin':40496,'Madoka Magica':9756,
+ 'Hunter x Hunter':11061,'Fullmetal Alchemist: Brotherhood':5114,'Death Note':1535,
+ 'Tokyo Ghoul':22319,'Sword Art Online':11757,'Fairy Tail':6702,
+ "JoJo's Bizarre Adventure":14719,'Mob Psycho 100':32182,
+ 'Solo Leveling':52299,"Frieren: Beyond Journey's End":52991,
+ 'Spy x Family':50265,'Blue Lock':49596,'Haikyuu!!':20583,'Dr. Stone':38691,
+ 'Fire Force':38671,'Re:Zero':31240,'Overlord':29803,
+ 'The Seven Deadly Sins':23755,'Code Geass':1575,'Pokémon':527,
+ 'Yu Yu Hakusho':392,'Gintama':918,'Dandadan':57334,'Vinland Saga':37521
+};
+const castPortraitCache=new Map();
+async function castPortrait(person,aliases){
+  const malId=JIKAN_ANIME_IDS[person.anime];if(!malId)return null;
+  let job=castPortraitCache.get(malId);
+  if(!job){
+    job=(async()=>{
+      try{
+        const res=await pacedPhotoRequest('https://api.jikan.moe/v4/anime/'+malId+'/characters');
+        return res.ok?(await res.json()).data||[]:[];
+      }catch(e){console.log('Elenco externo:',e.message);return [];}
+    })();
+    castPortraitCache.set(malId,job);
+  }
+  const chars=await job;
+  const wordsList=aliases.map(pictureWords).filter(words=>words.length);
+  for(const item of chars){
+    const c=item.character||item,regular=pictureWords(c.name);
+    const backwards=String(c.name||'').split(',').map(x=>x.trim()).reverse().join(' ');
+    const norm=pictureWords(backwards);
+    const matches=wordsList.some(words=>{
+      const full=words.join(' ');
+      return regular.join(' ')===full||norm.join(' ')===full;
+    });
+    if(matches){
+      return c.images?.jpg?.image_url||c.images?.webp?.image_url||null;
+    }
+  }
+  return null;
+}
 async function searchPortrait(person){
   const id=FIXED_PORTRAIT_IDS[person.id];
   if(id){
@@ -297,6 +341,7 @@ async function searchPortrait(person){
     if(person.id==='satan')return 'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png';
   }
   const names=[person.name,...(PICTURE_ALIASES[person.id]||[])];
+  try{const cast=await castPortrait(person,names);if(cast)return cast;}catch(e){console.log('Retrato no elenco:',e.message);}
   for(const name of [...new Set(names)]){
     try{
       const res=await pacedPhotoRequest('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(name)+'&limit=20');
@@ -343,7 +388,7 @@ async function portraitBytes(character){
 function servePortrait(req,res,person){
   if(!person){res.writeHead(404);res.end();return;}
   const cached=portraitCache.get(person.id);
-  if(cached&&Date.now()-cached.time<3600000){
+  if(cached&&Date.now()-cached.time<(cached.data?3600000:60000)){
     if(cached.data){res.writeHead(200,{'Content-Type':cached.data.mime,'Cache-Control':'public,max-age=86400'});res.end(cached.data.buffer);}
     else{res.writeHead(404,{'Cache-Control':'public,max-age=90'});res.end();}
     return;
