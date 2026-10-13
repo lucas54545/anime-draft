@@ -26,15 +26,15 @@
       <div class="hero-copy">
         <div class="eyebrow"><span class="star">✦</span> A ARENA DEFINITIVA DE ANIME</div>
         <h1>O MELHOR <span>DRAFT</span><br>VENCE A <em>BATALHA.</em></h1>
-        <p>Monte um time lendário no leilão secreto, desafie seu amigo pelo nome e descubra quem domina os cinco atributos.</p>
-        <div class="hero-pills"><span>🪙 20 MOEDAS</span><span>⚔️ 5 CONFRONTOS</span><span>👥 MULTIPLAYER + MODO LOCAL</span></div>
+        <p>Monte um time lendário no leilão de 10 segundos, desafie seu amigo pelo nome e some os cinco atributos para vencer.</p>
+        <div class="hero-pills"><span>🪙 20 MOEDAS</span><span>⏱️ 10s PARA COBRIR</span><span>⚔️ MAIOR TOTAL VENCE</span><span>👥 MULTIPLAYER + MODO LOCAL</span></div>
       </div>
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-1"></div><div class="orbit orbit-2"></div><span class="crosshair">✛</span><div class="hero-card hero-card-left"><span>⚡</span><small>POWER</small><b>???</b></div><div class="hero-vs">VS</div><div class="hero-card hero-card-right"><span>🔥</span><small>SKILL</small><b>???</b></div><div class="orbit-label">ANIME DRAFT / RANKED ARENA</div></div>
     </section>
 
     <section class="content-layout">
       <div class="app-panel">
-        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 3.0 CORRIGIDO</span></div>
+        <div class="panel-heading"><div><span class="section-eyebrow" id="panelEyebrow">// MULTIPLAYER ARENA</span><h2 id="panelHeading">ENTRE NA ARENA</h2><p id="panelDescription">Crie um apelido para desafiar seus amigos.</p></div><span class="version">V 5.0 • VENCE O MAIOR TOTAL</span></div>
 
         <section id="lobby" class="screen panel-body">
           <div id="loginBox" class="login-grid">
@@ -72,10 +72,19 @@
           <div class="arena-topline"><span class="phase-pill"><span class="mini-dot"></span> <span id="arenaPhase">LEILÃO AO VIVO</span></span><span class="round-indicator" id="roundLabel">RODADA 01 / 05</span></div>
           <div class="progress-steps" id="steps" aria-label="Progresso do draft"></div>
           <div class="matchbar"><div class="challenger"><small>JOGADOR 1</small><b id="matchName0">—</b><div class="wallet">🪙 <span id="budget0">20</span><small> MOEDAS</small></div></div><div class="vs-small">VS</div><div class="challenger align-right"><small>JOGADOR 2</small><b id="matchName1">—</b><div class="wallet">🪙 <span id="budget1">20</span><small> MOEDAS</small></div></div></div>
-          <div class="auction-explain"><h3 id="auctionTitle">QUEM LEVA O DESTAQUE?</h3><p id="auctionCaption">Ambos dão um lance secreto. Quem oferecer mais leva o destaque; o outro recebe o reserva gratuitamente.</p></div>
+          <div class="auction-explain"><h3 id="auctionTitle">QUEM LEVA O DESTAQUE?</h3><p id="auctionCaption">Comece oferecendo 1 moeda. Seu rival tem 10 segundos para oferecer 2 ou desistir. Depois é a sua vez de oferecer 3.</p></div>
           <div class="auction-pair" id="auctionPair"></div>
-          <div id="biddingArea" class="bid-panel"><div class="bid-top"><div><small>SEU LANCE SECRETO</small><strong>🪙 <span id="bidValue">3</span></strong></div><div class="balance-hint">Você tem <b id="budgetHint">20</b> moedas</div></div><input id="bidSlider" class="range" type="range" min="0" max="20" value="3" step="1" aria-label="Quantas moedas deseja oferecer"><div class="range-ends"><span>0</span><span id="bidMax">20</span></div><button id="placeBid" class="btn btn-primary full">🔒 CONFIRMAR LANCE</button><p class="small-note">Ninguém vê seu lance antes de ambos enviarem. Os poderes serão mostrados após a escolha, nunca durante o leilão.</p></div>
-          <div id="awaitBid" class="waiting-card" hidden><span class="loading-ring"></span><div><b>SEU LANCE FOI ENVIADO</b><p id="waitingMessage">Esperando o adversário...</p></div></div>
+          <div id="liveBidBanner" class="live-auction" aria-live="polite">
+            <div class="live-auction-numbers"><div><small>MAIOR LANCE</small><strong>🪙 <span id="currentBid">0</span></strong></div><div class="clock-face" id="timerFace"><small>SEGUNDOS RESTANTES</small><b id="secondsLeft">10</b><div class="timer-track"><span id="timerFill"></span></div></div></div>
+            <p id="bidLeader">Aguardando primeiro lance...</p>
+          </div>
+          <div id="biddingArea" class="bid-panel" hidden>
+            <div class="bid-top"><div><small>É SUA VEZ!</small><strong>🪙 <span id="bidValue">1</span></strong></div><div class="balance-hint">Você tem <b id="budgetHint">20</b> moedas</div></div>
+            <p class="bid-help">Seu próximo lance aumenta exatamente 1 moeda. O rival tem 10 segundos para responder.</p>
+            <div class="auction-buttons"><button id="placeBid" class="btn btn-primary">⚡ OFERECER 1 MOEDA</button><button id="passBid" class="btn btn-outline">✋ DESISTIR</button></div>
+            <p class="small-note">Os poderes ficam em ??? até o personagem entrar no time.</p>
+          </div>
+          <div id="awaitBid" class="waiting-card" hidden><span class="loading-ring"></span><div><b>AGUARDANDO O ADVERSÁRIO</b><p id="waitingMessage">Ele pode cobrir o lance ou desistir.</p></div></div>
           <div id="reveal" class="reveal-box" hidden></div>
           <div class="my-team"><div class="section-eyebrow">// DRAFT DOS JOGADORES</div><div id="teamBoards" class="team-boards"></div></div>
           <button id="leaveMatch" class="btn btn-link">← Sair da partida</button>
@@ -84,9 +93,9 @@
         <section id="battle" class="screen panel-body" hidden><div class="battle-banner"><span class="battle-kicker">A BATALHA FINAL COMEÇOU</span><div class="battle-glow">🏆</div><h2 id="winnerTitle">RESULTADO DA ARENA</h2><p id="winnerSubtitle">Calculando o vencedor...</p><div class="scoreboards"><div><small id="battleName0">JOGADOR 1</small><b id="battleScore0">0</b><span id="battleTotal0">0 pontos</span></div><div class="center-vs">VS</div><div><small id="battleName1">JOGADOR 2</small><b id="battleScore1">0</b><span id="battleTotal1">0 pontos</span></div></div></div><div class="battle-rows" id="battleRows"></div><div class="action-grid"><button class="btn btn-primary" id="goLobby">⚔ VOLTAR AO LOBBY</button><button class="btn btn-outline" id="copyBattle">📋 COPIAR RESULTADO</button></div></section>
       </div>
 
-      <aside class="right-rail"><div class="rail-card"><div class="rail-title"><span class="mini-dot"></span> JOGADORES ONLINE</div><div id="onlineList" class="online-list"><span class="muted">Entre para ver quem está online.</span></div><p class="rail-foot">Convites funcionam quando os dois estão conectados ao mesmo site.</p></div><div class="rail-card rules-card"><div class="rail-title">⚡ COMO FUNCIONA</div><div class="rule"><b>01</b><div><strong>Escolha o adversário</strong><p>Envie o convite pelo apelido e espere ele aceitar.</p></div></div><div class="rule"><b>02</b><div><strong>Dispute os leilões</strong><p>Você começa com 20 moedas. São cinco rodadas com lances escondidos.</p></div></div><div class="rule"><b>03</b><div><strong>Descubra os poderes</strong><p>Você vê os poderes completos assim que recebe seu personagem.</p></div></div><div class="rule"><b>04</b><div><strong>Enfrente o seu rival</strong><p>Ambos recebem a batalha ao mesmo tempo. Mais atributos ganhos = vitória.</p></div></div></div><div class="credit-card">70 PERSONAGENS <span>✦</span> 14 ANIMES <span>✦</span> MUITAS SURPRESAS</div></aside>
+      <aside class="right-rail"><div class="rail-card"><div class="rail-title"><span class="mini-dot"></span> JOGADORES ONLINE</div><div id="onlineList" class="online-list"><span class="muted">Entre para ver quem está online.</span></div><p class="rail-foot">Convites funcionam quando os dois estão conectados ao mesmo site.</p></div><div class="rail-card rules-card"><div class="rail-title">⚡ COMO FUNCIONA</div><div class="rule"><b>01</b><div><strong>Escolha o adversário</strong><p>Envie o convite pelo apelido e espere ele aceitar.</p></div></div><div class="rule"><b>02</b><div><strong>Dispute os leilões</strong><p>Você começa com 20 moedas. Dê 1, seu amigo tem 10 segundos para cobrir com 2; depois você pode dar 3 ou desistir.</p></div></div><div class="rule"><b>03</b><div><strong>Descubra os poderes</strong><p>Você vê os poderes completos assim que recebe seu personagem.</p></div></div><div class="rule"><b>04</b><div><strong>Enfrente o seu rival</strong><p>Ambos veem o resultado ao mesmo tempo. Quem somar mais pontos nos cinco atributos vence.</p></div></div></div><div class="credit-card">70 PERSONAGENS <span>✦</span> 14 ANIMES <span>✦</span> MUITAS SURPRESAS</div></aside>
     </section>
-    <footer>ANIME DRAFT BATTLE <span>Fan game não oficial. Personagens pertencem aos seus criadores. Imagens quando disponíveis via Jikan / MyAnimeList. Sem conexão, o jogo mostra ícones.</span></footer>
+    <footer>ANIME DRAFT BATTLE <span>Fan game não oficial. Poderes são valores fictícios de jogo. Personagens pertencem aos seus criadores. Imagens quando disponíveis via Jikan / MyAnimeList. Imagens podem depender da conexão com a API.</span></footer>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
