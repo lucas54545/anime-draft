@@ -39,57 +39,85 @@ function roomView(room, idx) {
     you:idx, budgets:room.budgets,
     teams:room.teams.map(t=>t.map(c=>c?acquiredFighter(CHAR[c]):null)),
     offered:room.offer.map(c=>publicFighter(CHAR[c])),
-    submitted:room.bids.map(b=>b!==null),
-    result:room.result || null
+    currentBid:room.currentBid, leader:room.leader, turn:room.turn, deadline:room.deadline,
+    minimum:room.currentBid+1, result:room.result || null
   };
 }
 function chooseOffer(room) {
   const used=new Set(room.teams.flat().filter(Boolean));
   const available=ROSTER.filter(x=>!used.has(x.id));
   const random=arr=>arr[Math.floor(Math.random()*arr.length)];
-  // Vary power level, including underdogs. The two choices are never identical.
-  const all=[...available].sort(()=>Math.random()-.5);
   let primary=random(available);
-  if (Math.random()<.27) {const weak=available.filter(x=>x.stats.reduce((a,b)=>a+b,0)<290); if(weak.length)primary=random(weak);}
-  const other=all.find(x=>x.id!==primary.id) || available.find(x=>x.id!==primary.id);
-  room.offer=[primary.id,other.id];
-  room.bids=[null,null]; room.result=null; room.phase='auction';
+  if(Math.random()<.27) {
+    const weak=available.filter(x=>x.stats.reduce((a,b)=>a+b,0)<290);
+    if(weak.length)primary=random(weak);
+  }
+  const backup=random(available.filter(x=>x.id!==primary.id));
+  room.offer=[primary.id,backup.id];
+  room.currentBid=0;
+  room.leader=-1;
+  room.turn=room.round%2;
+  room.deadline=Date.now()+10000;
+  room.phase='auction';room.result=null;
+  scheduleTurn(room);
 }
 function makeRoom(p1,p2,mode) {
-  const room={id:id(), players:[p1,p2], mode, round:0, phase:'auction', budgets:[20,20], teams:[[],[]], offer:[], bids:[null,null],result:null, timer:null};
+  const room={id:id(),players:[p1,p2],mode,round:0,phase:'auction',budgets:[20,20],
+    teams:[[],[]],offer:[],currentBid:0,leader:-1,turn:0,deadline:0,result:null,timer:null,botTimer:null};
   rooms.set(room.id,room);
-  p1.roomId=room.id; if(p2)p2.roomId=room.id;
-  chooseOffer(room); syncRoom(room); presence();
-  if(mode==='bot') scheduleBot(room);
+  p1.roomId=room.id;if(p2)p2.roomId=room.id;
+  chooseOffer(room);syncRoom(room);presence();
   return room;
 }
-function scheduleBot(room) {
-  if(room.mode!=='bot' || room.phase!=='auction')return;
+// At every new bid, the OTHER player gets exactly ten seconds to raise or pass.
+function scheduleTurn(room) {
+  clearTimeout(room.timer);clearTimeout(room.botTimer);
+  if(room.phase!=='auction')return;
+  const expectedRound=room.round, expectedBid=room.currentBid;
+  const wait=Math.max(1,room.deadline-Date.now());
   room.timer=setTimeout(()=>{
-    if(!rooms.has(room.id)||room.phase!=='auction'||room.bids[1]!==null)return;
-    const strength=CHAR[room.offer[0]].stats[room.round];
-    const bid = Math.min(room.budgets[1],Math.max(0,Math.floor(strength/26+Math.random()*3-1)));
-    room.bids[1]=bid;
-    if(room.bids[0]!==null)resolveRound(room);else syncRoom(room);
-  }, 1100+Math.floor(Math.random()*1300));
+    if(!rooms.has(room.id)||room.phase!=='auction'||room.round!==expectedRound||room.currentBid!==expectedBid)return;
+    concludeAuction(room,'tempo esgotado');
+  },wait+35);
+  if(room.mode==='bot' && room.turn===1) {
+    room.botTimer=setTimeout(()=>{
+      if(!rooms.has(room.id)||room.phase!=='auction'||room.turn!==1)return;
+      const fighter=CHAR[room.offer[0]];
+      const preferred=Math.max(1,Math.min(8,Math.round(fighter.stats[room.round]/16 + (Math.random()*3-1.5))));
+      if(room.currentBid+1<=room.budgets[1] && room.currentBid+1<=preferred && Math.random()<.83)raiseBid(room,1,room.currentBid+1);
+      else concludeAuction(room,'bot desistiu');
+    },800+Math.floor(Math.random()*1600));
+  }
 }
-function resolveRound(room) {
-  if(room.phase!=='auction'||room.bids.some(b=>b===null))return;
-  room.phase='reveal';
-  const [a,b]=room.bids;
-  const winner=a===b ? (room.round%2) : a>b?0:1;
+function raiseBid(room,side,amount) {
+  if(room.phase!=='auction'||room.turn!==side)return false;
+  const needed=room.currentBid+1;
+  if(!Number.isInteger(amount)||amount!==needed||needed>room.budgets[side])return false;
+  room.currentBid=amount;room.leader=side;room.turn=1-side;
+  room.deadline=Date.now()+10000;
+  // If the new challenger can't afford the next bid, finish instantly.
+  if(room.budgets[room.turn]<room.currentBid+1){concludeAuction(room,'sem moedas para cobrir');return true;}
+  scheduleTurn(room);syncRoom(room);return true;
+}
+function concludeAuction(room,reason) {
+  if(room.phase!=='auction')return;
+  clearTimeout(room.timer);clearTimeout(room.botTimer);
+  room.phase='reveal';room.deadline=0;
+  // With no initial offer, the starting player receives the featured fighter free.
+  const winner=room.leader<0?(room.round%2):room.leader;
   const loser=1-winner;
-  room.budgets[winner]-=room.bids[winner];
+  const price=room.leader<0?0:room.currentBid;
+  room.budgets[winner]-=price;
   room.teams[winner].push(room.offer[0]);
   room.teams[loser].push(room.offer[1]);
-  room.result={winner, price:room.bids[winner], offers:room.offer.map(x=>acquiredFighter(CHAR[x])), bids:[a,b]};
+  room.result={winner,price,reason,offers:room.offer.map(x=>acquiredFighter(CHAR[x]))};
   syncRoom(room);
   room.timer=setTimeout(()=>{
-    if(!rooms.has(room.id))return;
+    if(!rooms.has(room.id)||room.phase!=='reveal')return;
     room.round++;
-    if(room.round<5) { chooseOffer(room);syncRoom(room);scheduleBot(room); }
+    if(room.round<5){chooseOffer(room);syncRoom(room);}
     else finishBattle(room);
-  }, Number(process.env.ROUND_DELAY_MS || 3300));
+  },Number(process.env.ROUND_DELAY_MS||3700));
 }
 function finishBattle(room) {
   room.phase='battle';
@@ -102,15 +130,16 @@ function finishBattle(room) {
     details.push({attribute:ATTRS[i],fighters:[{...publicFighter(p0),value:s0},{...publicFighter(p1),value:s1}],winner});
   }
   const totals=[0,1].map(side=>room.teams[side].reduce((sum,c,i)=>sum+CHAR[c].stats[i],0));
-  const winner=scores[0]===scores[1]?(totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1):scores[0]>scores[1]?0:1;
-  const payload={type:'battle',names:[room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'],scores,totals,winner,details,budgets:room.budgets,roomId:room.id, startAt:Date.now()+1400};
+  // O vencedor e definido pelo total dos cinco atributos, NAO pelo numero de categorias ganhas.
+  const winner=totals[0]===totals[1]?-1:totals[0]>totals[1]?0:1;
+  const payload={type:'battle',victoryRule:'total',names:[room.players[0]?.name||'Jogador 1',room.players[1]?.name||'BOT'],scores,totals,winner,details,budgets:room.budgets,roomId:room.id, startAt:Date.now()+1400};
   for (const u of room.players) issue(u,payload);
   room.battle=payload;
   presence();
 }
 function cleanRoom(room) {
   if (!room) return;
-  clearTimeout(room.timer);
+  clearTimeout(room.timer);clearTimeout(room.botTimer);
   rooms.delete(room.id);
   for (const u of room.players) if(u&&u.roomId===room.id){u.roomId=null;issue(u,{type:'left_room'});}
   presence();
@@ -164,14 +193,20 @@ function message(ws, data) {
   }
   if(kind==='bid'){
     const room=rooms.get(user.roomId);
-    if(!room||room.phase!=='auction')return error(ws,'Não há leilão ativo neste momento.');
+    if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
     const idx=room.players.findIndex(p=>p?.token===user.token);
-    if(idx<0||room.bids[idx]!==null)return error(ws,'Você já deu seu lance nesta rodada.');
+    if(idx<0||idx!==room.turn)return error(ws,'Espere a sua vez de dar o lance.');
+    if(Date.now()>room.deadline){concludeAuction(room,'tempo esgotado');return error(ws,'Os 10 segundos acabaram.');}
     const amount=Number(data.amount);
-    if(!Number.isInteger(amount)||amount<0||amount>room.budgets[idx])return error(ws,'Lance inválido. Seu saldo é '+room.budgets[idx]+'.');
-    room.bids[idx]=amount;
-    if(room.bids.every(x=>x!==null))resolveRound(room);else syncRoom(room);
+    if(!raiseBid(room,idx,amount))return error(ws,'Lance inválido. A próxima oferta é '+(room.currentBid+1)+' moeda(s).');
     return;
+  }
+  if(kind==='pass'){
+    const room=rooms.get(user.roomId);
+    if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
+    const idx=room.players.findIndex(p=>p?.token===user.token);
+    if(idx!==room.turn)return error(ws,'Ainda não é sua vez.');
+    concludeAuction(room,'jogador desistiu');return;
   }
   if(kind==='leave'){
     const room=rooms.get(user.roomId);if(room)cleanRoom(room);
