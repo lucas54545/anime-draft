@@ -4,7 +4,7 @@ const ATTR=['⚔️ FORÇA','🛡️ RESISTÊNCIA','🧠 QI','✨ HABILIDADE','�
 const SESSION_KEY='anime_draft_session_v2';
 const saved=(()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY))||{}}catch{return {}}})();
 const model={socket:null,connected:false,name:saved.name||'',token:saved.token||makeToken(),logged:false,room:null,battle:null,invitation:null,online:[],roster:[]};
-const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v8'))||{}}catch{return {}}})();
+const photoCache=(()=>{try{return JSON.parse(localStorage.getItem('anime_draft_photos_v9'))||{}}catch{return {}}})();
 let photoQueue=[],photoBusy=false,toastTimer=null,gameTimers=[],auctionClock=null;
 
 function makeToken(){
@@ -88,38 +88,75 @@ function portraitFallback(person){
 function imageMarkup(person,extraClass=''){
   if(!person||!person.id)return '';
   const fallback=portraitFallback(person);
-  const real=person.id==='satan'?(location.protocol==='file:'?'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png':'/api/portrait/satan?v=8'):photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id)+'?v=8');
+  const real=person.id==='satan'?(location.protocol==='file:'?'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png':'/api/portrait/satan?v=9'):photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id)+'?v=9');
   const url=real||fallback;
   return '<img class="character-img '+safe(extraClass)+'" data-character="'+safe(person.id)+'" data-fallback="'+safe(fallback)+'" src="'+safe(url)+'" alt="Retrato de '+safe(person.name)+'" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=this.dataset.fallback">';
 }
 // Matching images from Jikan's anime cast first, with a character search as fallback.
 // The queries are cached so the same photo doesn't require new requests every round.
 const NAME_ALIASES={goku:['Son Gokuu','Gokuu Son'],satan:['Mister Satan','Hercule Satan'],luffy:['Luffy, Monkey D.'],zoro:['Zoro, Roronoa'],deku:['Midoriya Izuku'],eren:['Eren Jaeger'],gohan:['Son Gohan'],kyubey:['Kyuubey'],rimuru:['Limule Tempest']};
+// Elenco ampliado: usar elenco oficial do anime reduz retratos trocados e buscas individuais.
+Object.assign(NAME_ALIASES,{
+  satan:['Mr. Satan','Mister Satan','Hercule'],rimuru:['Rimuru Tempest','Limule Tempest'],
+  killua:['Killua Zoldyck'],gon:['Gon Freecss'],kurapika:['Kurapika'],
+  edward:['Edward Elric'],alphonse:['Alphonse Elric'],roy:['Roy Mustang'],
+  lawliet:['L Lawliet','L'],light:['Light Yagami'],jinwoo:['Sung Jinwoo','Jinwoo Sung'],
+  cha:['Cha Hae-In'],frierenstark:['Stark'],cc:['C.C.'],ash:['Satoshi'],
+  okarun:['Ken Takakura','Okarun'],gintoki:['Gintoki Sakata'],pikachu:['Pikachu'],
+  thorfinn:['Thorfinn'],tsukasa:['Tsukasa Shishiou'],shinra:['Shinra Kusakabe'],
+  hinata:['Shouyou Hinata','Shoyo Hinata'],kageyama:['Tobio Kageyama'],
+  albedo:['Albedo'],meliodas:['Meliodas'],goku:['Goku','Son Gokuu','Son Goku'],
+  gojo:['Satoru Gojou','Gojo Satoru'],tanjiro:['Tanjirou Kamado'],
+  lelouch:['Lelouch Lamperouge'],reigen:['Reigen Arataka'],eren:['Eren Yeager','Eren Jaeger']
+});
 const MAL_ANIME={
  'Naruto':20,'Dragon Ball':223,'One Piece':21,'Bleach':269,'Demon Slayer':38000,
  'Jujutsu Kaisen':40748,'My Hero Academia':31964,'Attack on Titan':16498,
  'Black Clover':34572,'Chainsaw Man':44511,'One Punch Man':30276,
- 'Tensei Shitara Slime':37430,'Maou Gakuin':40496,'Madoka Magica':9756
+ 'Tensei Shitara Slime':37430,'Maou Gakuin':40496,'Madoka Magica':9756,
+ 'Hunter x Hunter':11061,'Fullmetal Alchemist: Brotherhood':5114,'Death Note':1535,
+ 'Tokyo Ghoul':22319,'Sword Art Online':11757,'Fairy Tail':6702,
+ "JoJo's Bizarre Adventure":14719,'Mob Psycho 100':32182,
+ 'Solo Leveling':52299,"Frieren: Beyond Journey's End":52991,
+ 'Spy x Family':50265,'Blue Lock':49596,'Haikyuu!!':20583,'Dr. Stone':38691,
+ 'Fire Force':38671,'Re:Zero':31240,'Overlord':29803,
+ 'The Seven Deadly Sins':23755,'Code Geass':1575,'Pokémon':527,
+ 'Yu Yu Hakusho':392,'Gintama':918,'Dandadan':57334,'Vinland Saga':37521
 };
 const castJobs=new Map();
 const pendingIDs=new Set();
 function normName(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');}
 function setImage(person,url){
-  if(!url || !/^https:\/\//i.test(url))return;
-  photoCache[person.id]=url;
-  pendingIDs.delete(person.id);
-  document.querySelectorAll('img[data-character="'+CSS.escape(person.id)+'"]').forEach(img=>{img.src=url;img.hidden=false;});
-  try{localStorage.setItem('anime_draft_photos_v8',JSON.stringify(photoCache));}catch{}
+  if(!url||!/^https:\/\//i.test(url))return;
+  // Só salva fotos que carregam. URLs mortas não estragam os cards.
+  const test=new Image();
+  test.onload=()=>{
+    photoCache[person.id]=url;pendingIDs.delete(person.id);
+    document.querySelectorAll('img[data-character="'+CSS.escape(person.id)+'"]').forEach(img=>{
+      img.onerror=function(){this.onerror=null;this.src=this.dataset.fallback};
+      img.src=url;img.hidden=false;
+    });
+    try{localStorage.setItem('anime_draft_photos_v9',JSON.stringify(photoCache));}catch{}
+  };
+  test.onerror=()=>{};test.referrerPolicy='no-referrer';test.src=url;
 }
 function matchImage(p,items){
   const acceptable=new Set([p.name,...(NAME_ALIASES[p.id]||[])].map(normName));
-  const found=items.find(x=>acceptable.has(normName(x.name))||acceptable.has(normName(String(x.name||'').split(',').map(y=>y.trim()).reverse().join(' '))));
+  const matches=name=>{
+    const norm=normName(name);
+    const reversed=normName(String(name||'').split(',').reverse().join(' '));
+    return acceptable.has(norm)||acceptable.has(reversed);
+  };
+  const found=(items||[]).find(x=>matches(x.name));
   if(found)setImage(p,found.images?.jpg?.image_url||found.images?.webp?.image_url);
 }
-async function fetchJSON(url){
-  const c=new AbortController();const t=setTimeout(()=>c.abort(),9500);
-  try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}
-  finally{clearTimeout(t);}
+async function fetchJSON(url,options={}){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),9500);
+  try{
+    const r=await fetch(url,{...options,signal:c.signal});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }finally{clearTimeout(t);}
 }
 async function fetchAnimeCast(anime){
   if(!MAL_ANIME[anime])return;
@@ -136,19 +173,36 @@ function maybePhoto(person){
   pendingIDs.add(person.id);photoQueue.unshift(person);drainPhotos();
 }
 async function drainPhotos(){
-  if(photoBusy)return; photoBusy=true;
+  if(photoBusy)return;photoBusy=true;
   while(photoQueue.length){
     const p=photoQueue.pop();
     if(photoURL(p.id)){pendingIDs.delete(p.id);continue;}
     try{
+      // 1. Personagem por anime, preservando a identidade correta.
       await fetchAnimeCast(p.anime);
+      // 2. Procura nomes alternativos no MyAnimeList.
       if(!photoURL(p.id)){
-        const body=await fetchJSON('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(p.name)+'&limit=12');
-        matchImage(p,body.data||[]);
+        for(const name of [p.name,...(NAME_ALIASES[p.id]||[])].slice(0,3)){
+          const body=await fetchJSON('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(name)+'&limit=15');
+          matchImage(p,body.data||[]);
+          if(photoURL(p.id))break;
+        }
       }
-    }catch(e){console.debug('Imagem indisponível:',p.name,e.message);}
+      // 3. AniList como fonte extra se MyAnimeList não localizou retrato.
+      if(!photoURL(p.id)){
+        const query='query($search:String){Character(search:$search){name{full}image{large}}}';
+        for(const name of [p.name,...(NAME_ALIASES[p.id]||[])].slice(0,2)){
+          const body=await fetchJSON('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,variables:{search:name}})});
+          const c=body.data?.Character;
+          if(c&&new Set([p.name,...(NAME_ALIASES[p.id]||[])].map(normName)).has(normName(c.name?.full))){
+            setImage(p,c.image?.large);
+            break;
+          }
+        }
+      }
+    }catch(e){console.debug('Retrato externo indisponível:',p.name,e.message);}
     pendingIDs.delete(p.id);
-    await new Promise(resolve=>setTimeout(resolve,1100));
+    await new Promise(resolve=>setTimeout(resolve,480));
   }
   photoBusy=false;
 }
@@ -259,19 +313,18 @@ function renderBattle(data){
   cancelTimers();show('battle');
   $('battleName0').textContent=data.names[0];$('battleName1').textContent=data.names[1];
   $('winnerTitle').textContent=data.winner<0?'EMPATE!':data.names[data.winner].toUpperCase()+' VENCEU!';
-  $('winnerSubtitle').textContent='Vence quem somar mais pontos nos 5 atributos';
+  $('winnerSubtitle').textContent='Maior soma dos cinco atributos vence';
   $('battleScore0').textContent=data.totals[0];$('battleScore1').textContent=data.totals[1];
   $('battleTotal0').textContent=data.scores[0]+' atributos vencidos';
   $('battleTotal1').textContent=data.scores[1]+' atributos vencidos';
-  const root=$('battleRows');root.replaceChildren();
-  root.insertAdjacentHTML('beforeend','<div class="versus-header"><span>'+safe(data.names[0])+'</span><span>ATRIBUTO</span><span>'+safe(data.names[1])+'</span></div>');
-  // Um duelo = só imagem pequena, nome e pontuação do atributo escolhido, em lados opostos.
+  const area=$('battleRows');
+  area.innerHTML='<div class="battle-lane-head"><span>'+safe(data.names[0])+'</span><span>FOTOS NO CENTRO</span><span>'+safe(data.names[1])+'</span></div>';
   data.details.forEach((item,i)=>{
-    const [left,right]=item.fighters;
+    const left=item.fighters[0],right=item.fighters[1];
     maybePhoto(left);maybePhoto(right);
-    const row=document.createElement('div');row.className='battle-row anime-versus-row';
-    row.innerHTML=`<div class="versus-side left ${item.winner===0?'win':''}"><div class="duel-face">${imageMarkup(left)}</div><span class="duel-person">${safe(left.name)}</span><b class="duel-score">${left.value}</b></div><div class="versus-center"><small>ROUND ${String(i+1).padStart(2,'0')}</small><strong>${safe(ATTR[i])}</strong></div><div class="versus-side right ${item.winner===1?'win':''}"><b class="duel-score">${right.value}</b><span class="duel-person">${safe(right.name)}</span><div class="duel-face">${imageMarkup(right)}</div></div>`;
-    root.append(row);
+    const row=document.createElement('div');row.className='battle-row battle-row-v9';
+    row.innerHTML=`<div class="versus-text left ${item.winner===0?'win':''}"><small>JOGADOR 1</small><b>${safe(left.name)}</b><strong>${left.value}</strong></div><div class="versus-middle"><div class="middle-photos"><div class="mid-photo ${item.winner===0?'win':''}">${imageMarkup(left)}</div><div class="mid-vs-wrap"><span>VS</span><em>${safe(ATTR[i])}</em></div><div class="mid-photo ${item.winner===1?'win':''}">${imageMarkup(right)}</div></div></div><div class="versus-text right ${item.winner===1?'win':''}"><small>JOGADOR 2</small><b>${safe(right.name)}</b><strong>${right.value}</strong></div>`;
+    area.append(row);
   });
 }
 async function copyResult(){
