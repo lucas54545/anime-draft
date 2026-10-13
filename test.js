@@ -53,7 +53,7 @@ const extraModes=read('public/special-modes.js');
 for(const id of ['localTournamentBtn','localMysteryBtn','localRouletteBtn','ffaBtn','direct5v5Btn','specialContent']){
   assert.ok(html.includes('id="'+id+'"'),'Botão ou tela V12 ausente: '+id);
 }
-assert.ok(html.includes('special-modes.js?v=13.0'),'Novo script precisa ser carregado');
+assert.ok(html.includes('special-modes.js?v=13.1'),'Novo script precisa ser carregado');
 assert.ok(app.includes("['lobby','offline','special','arena','battle']"),'Navegação V12 indisponível');
 assert.ok(app.includes('window.imageMarkup=imageMarkup;'),'Os retratos locais devem usar as imagens reais');
 for(const method of ['function tournamentBotDuel(','function tournamentAdvance(','function tournamentBracket(','function rouletteSpin(']){
@@ -75,7 +75,7 @@ assert.ok(app.includes("$('loginBtn').disabled=false;"),'Botão de entrar não d
 assert.ok(app.includes("!model.connected"),'Login local deve funcionar quando multiplayer cair');
 assert.ok(app.includes(String.raw`/\.github\.io$/i`),'GitHub Pages deve abrir o modo local sem erro de conexão');
 assert.ok(app.includes("$('localBotBtn').click();"),'Treino contra bot precisa ter fallback offline');
-assert.ok(html.includes('./app.js?v=13.0'),'Browser deve atualizar automaticamente o script corrigido');
+assert.ok(html.includes('./app.js?v=13.1'),'Browser deve atualizar automaticamente o script corrigido');
 console.log('✓ Arena V12.1: login sem WebSocket e jogo local liberado');
 
 
@@ -91,20 +91,28 @@ for(const id of ['onlineMysteryBtn','onlineRouletteBtn','onlineTournamentBtn','o
  'specialOnlineCodeInput','specialOnlineJoinBtn']){
   assert.ok(html.includes('id="'+id+'"'),'Controle de multiplayer V13 ausente: '+id);
 }
-assert.ok(html.includes('special-online.js?v=13.0'),'Script multiplayer precisa ser publicado com a versão V13');
+assert.ok(html.includes('special-online.js?v=13.1'),'Script multiplayer precisa ser publicado com a versão V13');
 assert.ok(server.includes("require('./special-server')"),'Servidor principal precisa carregar partidas online especiais');
 assert.ok(server.includes("specialMultiplayer.handle(user,data)"),'Ações especiais precisam ser autenticadas pelo WebSocket');
 assert.ok(server.includes("specialMultiplayer.resume(user)"),'Jogadores devem retornar à partida após reconexão');
 assert.ok(server.includes("specialGameId")&&server.includes("specialLobbyCode"),'Presença deve identificar sessões especiais');
 for(const word of ["mystery:2","roulette:2","ffa:4","direct:2","tournament:8",
- "function startTournamentStage(","function pickDirect(","function expireAuction(","function finishMatch(","function genCode("]){
+ "function startTournamentStage(","function offerNext(","function expireAuction(","function finishMatch(","function genCode("]){
   assert.ok(specialBackend.includes(word),'Backend especial ausente: '+word);
 }
 assert.ok(specialBackend.includes("const masked=game.mode==='mystery'"),'Leilão misterioso não pode revelar nome antes da escolha');
-assert.ok(specialBackend.includes("const powerA=(tier(a)+1)*12"),'Confronto 5v5 online não deve escolher atributo isolado');
-assert.ok(specialFrontend.includes("function renderAuction(")&&specialFrontend.includes("function directDraft(")&&
+assert.ok(specialBackend.includes("budgets:participants.map(()=>game.mode==='direct'?50:20)"),'5v5 online deve começar com 50 moedas');
+assert.ok(specialBackend.includes("const direct=m.mode==='direct'"),'5v5 online deve usar a soma de todos os atributos');
+assert.ok(specialBackend.includes("direct?avg(c):c.stats[i]"),'Comparação 5v5 deve mostrar poder total do personagem');
+assert.ok(specialBackend.includes("totals[0]===totals[1]?-1"),'Empate total no 5v5 deve ser possível');
+assert.ok(!specialBackend.includes("function pickDirect("),'5v5 online não deve permitir seleção livre');
+assert.ok(specialFrontend.includes("function renderAuction(")&&specialFrontend.includes("function renderPlace(")&&
  specialFrontend.includes("function renderTournamentStatus("),'Multiplayer precisa de telas para leilões, escolhas e torneio');
 assert.ok(specialFrontend.includes("data.bidMode==='avoid'?'✅ PEGAR GRÁTIS'"),'Pegar grátis segue lance negativo');
 assert.ok(specialFrontend.includes("anyBid?btn("),'Não revelar pegar grátis antes do primeiro lance');
-console.log('✓ V13: 5 modos online autenticados, salas de 2/4/8, regras ocultas, reconexão');
+assert.ok(offline.includes("function directAuctionBattle("),'5v5 local deve usar total dos cinco personagens');
+assert.ok(offline.includes("budgets:direct?[50,50]:[20,20]"),'5v5 local deve iniciar com 50 moedas');
+assert.ok(offline.includes("$('direct5v5Btn').addEventListener('click',()=>start('direct5v5'))"),'Botão do 5v5 precisa abrir leilão local');
+assert.ok(!extraModes.includes("$('direct5v5Btn').addEventListener('click',()=>open('duel'))"),'Botão 5v5 não deve abrir seleção livre');
+console.log('✓ V13.1: cinco modos multiplayer, leilão 5v5 de 50 moedas e soma total');
 require('./special-server.test.js');
