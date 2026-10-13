@@ -143,7 +143,7 @@ function endBid(reason){
 function choose(){
   const n=st.winner,p=st.current;
   root().innerHTML=heading('ESCOLHA ONDE COLOCAR','Os atributos numéricos continuam escondidos até confirmar a posição.')+
-    '<div class="offline-winner"><span>🏆 VENCEDOR DO LEILÃO</span><h3>'+esc(st.names[n])+'</h3><p>Levou '+esc(p.name)+'. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Preço 🪙 '+st.price+'.')</p></div>'+
+    '<div class="offline-winner"><span>🏆 VENCEDOR DO LEILÃO</span><h3>'+esc(st.names[n])+'</h3><p>Levou '+esc(p.name)+'. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Preço 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="auction-pair single-auction">'+card(p)+'</div>'+
     '<div class="placement-area"><span class="section-eyebrow">🎯 DEFINA SUA ESTRATÉGIA</span><h3>ESCOLHA UMA POSIÇÃO LIVRE</h3>'+
     '<div class="placement-options">'+ATTR.map((label,i)=>'<button class="position-btn" data-slot="'+i+'" '+(st.teams[n][i]?'disabled':'')+'><span>'+label+'</span><b>'+(st.teams[n][i]?'OCUPADO':'ESCOLHER →')+'</b></button>').join('')+'</div></div>'+
@@ -155,7 +155,7 @@ function chooseSlot(slot){
   timers();st.phase='reveal';st.teams[st.winner][slot]=st.current;
   const p=st.current;
   root().innerHTML=heading('PODER REVELADO!','O personagem entrou na posição escolhida. Agora os números aparecem.')+
-    '<div class="offline-winner"><span>🎯 POSIÇÃO ESCOLHIDA: '+ATTR[slot]+'</span><h3>'+esc(p.name)+'</h3><p>'+esc(st.names[st.winner])+' colocou o personagem. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Pagou 🪙 '+st.price+'.')</p></div>'+
+    '<div class="offline-winner"><span>🎯 POSIÇÃO ESCOLHIDA: '+ATTR[slot]+'</span><h3>'+esc(p.name)+'</h3><p>'+esc(st.names[st.winner])+' colocou o personagem. '+(st.price<0?'O rival queimou '+Math.abs(st.price)+' moedas no limbo.':'Pagou 🪙 '+st.price+'.')+'</p></div>'+
     '<div class="offline-revealpair one-reveal"><div class="offline-revealcard">'+portrait(p)+'<h4>'+esc(p.name)+'</h4>'+stats(p)+'</div></div>'+
     '<div class="offline-subtitle">⚔️ TIMES COMPLETADOS</div>'+teams()+
     '<div class="offline-actions">'+btn(st.round===9?'⚔️ VER BATALHA FINAL':'PRÓXIMO LEILÃO →','localNext')+'</div>';
