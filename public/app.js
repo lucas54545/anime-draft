@@ -75,13 +75,26 @@ function respond(accept){
   if(send('respond',{id:invitation.id,accept})){model.invitation=null;renderInvitations();}
 }
 function photoURL(id){return typeof photoCache[id]==='string'?photoCache[id]:'';}
+const placeholderCache={};
+function portraitFallback(person){
+  if(placeholderCache[person.id])return placeholderCache[person.id];
+  const colors=[['#194b77','#5cd2e9'],['#513675','#e88ef2'],['#174b42','#79e7ad'],['#553040','#ffad68'],['#223a82','#a1bbfa']];
+  let hash=0;for(const c of String(person.id))hash=(hash*31+c.charCodeAt(0))>>>0;
+  const [dark,light]=colors[hash%colors.length];
+  const label=safe(String(person.name||'Personagem').slice(0,26));
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 340"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="'+dark+'"/><stop offset="1" stop-color="#090f24"/></linearGradient></defs><rect width="300" height="340" fill="url(#g)"/><circle cx="150" cy="132" r="105" fill="'+light+'" opacity=".18"/><path d="M50 290q20-90 100-90t100 90" fill="'+light+'" opacity=".48"/><ellipse cx="150" cy="136" rx="54" ry="70" fill="#cd9c87"/><path d="M94 125q-7-86 58-94 61 2 57 94-31-19-46-51-29 40-69 51" fill="#151b2f"/><path d="M122 150h17m27 0h17" stroke="#161923" stroke-width="5"/><path d="M138 181q12 9 24 0" stroke="#7c4651" fill="none" stroke-width="3"/><rect y="282" width="300" height="58" fill="#080c1b"/><text x="150" y="312" font-size="18" font-weight="bold" text-anchor="middle" fill="white" font-family="Arial">'+label+'</text><text x="150" y="329" font-size="10" text-anchor="middle" fill="'+light+'" font-family="Arial">RETRATO ILUSTRADO</text></svg>';
+  return placeholderCache[person.id]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
 function imageMarkup(person,extraClass=''){
   if(!person||!person.id)return '';
-  const url=photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id));
-  return '<img class="character-img '+extraClass+'" data-character="'+safe(person.id)+'" src="'+safe(url)+'" alt="Imagem de '+safe(person.name)+'" loading="eager" referrerpolicy="no-referrer" '+(url?'':'hidden')+' onerror="this.hidden=true">';
+  const fallback=portraitFallback(person);
+  const real=photoURL(person.id)||(location.protocol==='file:'?'':'/api/portrait/'+encodeURIComponent(person.id)+'?v=7');
+  const url=real||fallback;
+  return '<img class="character-img '+safe(extraClass)+'" data-character="'+safe(person.id)+'" data-fallback="'+safe(fallback)+'" src="'+safe(url)+'" alt="Retrato de '+safe(person.name)+'" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=this.dataset.fallback">';
 }
 // Matching images from Jikan's anime cast first, with a character search as fallback.
 // The queries are cached so the same photo doesn't require new requests every round.
+const NAME_ALIASES={goku:['Son Gokuu','Gokuu Son'],satan:['Mister Satan','Hercule Satan'],luffy:['Luffy, Monkey D.'],zoro:['Zoro, Roronoa'],deku:['Midoriya Izuku'],eren:['Eren Jaeger'],gohan:['Son Gohan'],kyubey:['Kyuubey'],rimuru:['Limule Tempest']};
 const MAL_ANIME={
  'Naruto':20,'Dragon Ball':223,'One Piece':21,'Bleach':269,'Demon Slayer':38000,
  'Jujutsu Kaisen':40748,'My Hero Academia':31964,'Attack on Titan':16498,
@@ -99,14 +112,9 @@ function setImage(person,url){
   try{localStorage.setItem('anime_draft_photos_v2',JSON.stringify(photoCache));}catch{}
 }
 function matchImage(p,items){
-  const target=normName(p.name);if(!target)return;
-  const found=items.find(x=>{
-    const n=normName(x.name);
-    if(n===target)return true;
-    const backwards=String(x.name||'').split(',').map(y=>y.trim()).reverse().join(' ');
-    return normName(backwards)===target;
-  });
-  if(found) setImage(p, found.images?.jpg?.image_url||found.images?.webp?.image_url);
+  const acceptable=new Set([p.name,...(NAME_ALIASES[p.id]||[])].map(normName));
+  const found=items.find(x=>acceptable.has(normName(x.name))||acceptable.has(normName(String(x.name||'').split(',').map(y=>y.trim()).reverse().join(' '))));
+  if(found)setImage(p,found.images?.jpg?.image_url||found.images?.webp?.image_url);
 }
 async function fetchJSON(url){
   const c=new AbortController();const t=setTimeout(()=>c.abort(),9500);
@@ -164,7 +172,8 @@ function updateAuctionTimer(){
   $('timerFill').style.width=(remain*10)+'%';
   $('timerFace').classList.toggle('urgent',remain<=3);
   const myTurn=r.turn===r.you;
-  $('placeBid').disabled=!myTurn || r.minimum>r.budgets[r.you] || remain<=0;
+  $('placeBid').disabled=!myTurn || r.bidMode==='avoid' || r.minimum>r.budgets[r.you] || remain<=0;
+  $('avoidBid').disabled=!myTurn || r.bidMode==='buy' || !r.canAvoid || Math.abs(r.bidMode==='avoid'?r.minimum:-1)>r.budgets[r.you] || remain<=0;
   $('passBid').disabled=!myTurn||remain<=0;
 }
 function renderArena(){
@@ -187,11 +196,16 @@ function renderArena(){
   $('placementArea').hidden=!isPlace;
   $('reveal').hidden=!isReveal;
   $('currentBid').textContent=r.currentBid;
-  $('bidLeader').textContent=r.leader<0?'Nenhum lance ainda. '+r.names[r.turn]+' começa.':r.names[r.leader]+' está ganhando com '+r.currentBid+' moeda(s).';
+  $('bidLeader').textContent=r.leader<0?'Compre (+1), evite (-1) ou aceite grátis.':r.bidMode==='avoid'?r.names[r.leader]+' queimará '+Math.abs(r.currentBid)+' moedas para evitar este personagem.':r.names[r.leader]+' está ganhando por '+r.currentBid+' moedas.';
   $('budgetHint').textContent=myBudget;
-  $('bidValue').textContent=r.minimum;
-  $('placeBid').textContent='⚡ OFERECER '+r.minimum+' MOEDA'+(r.minimum!==1?'S':'');
-  $('waitingMessage').textContent=r.names[r.turn]+' tem 10 segundos para cobrir ou desistir.';
+  $('bidValue').textContent=r.currentBid;
+  $('placeBid').textContent='⚡ COMPRAR +'+(r.bidMode==='neutral'?1:r.minimum);
+  $('avoidBid').textContent='🛡️ EVITAR '+(r.bidMode==='neutral'?-1:r.minimum);
+  $('placeBid').hidden=r.bidMode==='avoid';
+  $('avoidBid').hidden=r.bidMode==='buy'||!r.canAvoid;
+  $('passBid').textContent=r.bidMode==='neutral'?'✅ ACEITAR GRÁTIS':r.bidMode==='avoid'?'✅ ACEITAR PERSONAGEM GRÁTIS':'✋ DESISTIR';
+  $('waitingMessage').textContent=r.names[r.turn]+' tem 10 segundos para responder.';
+  $('auctionCaption').textContent=r.bidMode==='avoid'?'Lance negativo: quem evitar o personagem perde as moedas no limbo. O outro fica com ele grátis.':r.bidMode==='buy'?'Lance positivo: quem oferecer mais paga e leva o personagem.':'Escolha comprar +1 ou evitar -1. As moedas negativas somem do jogo.';
   clearInterval(auctionClock);auctionClock=null;
   if(isAuction){updateAuctionTimer();auctionClock=setInterval(updateAuctionTimer,125);}
   if(isPlace){
@@ -217,7 +231,11 @@ function renderArena(){
 }
 function submitBid(){
   const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you)return;
-  if(send('bid',{amount:r.minimum})){$('placeBid').disabled=true;}
+  if(send('bid',{amount:r.bidMode==='neutral'?1:r.minimum})){$('placeBid').disabled=true;}
+}
+function avoidBid(){
+  const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you||r.bidMode==='buy')return;
+  if(send('bid',{amount:r.bidMode==='neutral'?-1:r.minimum}))$('avoidBid').disabled=true;
 }
 function giveUpBid(){
   const r=model.room;if(!r||r.phase!=='auction'||r.turn!==r.you)return;
@@ -228,17 +246,15 @@ function renderBattle(data){
   cancelTimers();show('battle');
   $('battleName0').textContent=data.names[0];$('battleName1').textContent=data.names[1];
   $('winnerTitle').textContent=data.winner<0?'EMPATE ÉPICO!':data.names[data.winner].toUpperCase()+' VENCEU!';
-  $('winnerSubtitle').textContent='🏆 O maior TOTAL dos 5 atributos vence • Força + Resistência + QI + Habilidade + Velocidade';
+  $('winnerSubtitle').textContent='Maior soma dos cinco atributos vence';
   $('battleScore0').textContent=data.totals[0];$('battleScore1').textContent=data.totals[1];
   $('battleTotal0').textContent=data.scores[0]+' categorias vencidas';$('battleTotal1').textContent=data.scores[1]+' categorias vencidas';
   $('battleRows').replaceChildren();
-  const baseDelay=Math.max(0,(data.startAt||Date.now())-Date.now());
+  // Mostrar os cinco confrontos juntos, sem animação que exija rolagem.
   data.details.forEach((item,i)=>{
-    const t=setTimeout(()=>{
       const row=document.createElement('div');row.className='battle-row';
       row.innerHTML=`<h3>${ATTR[i]}</h3><div class="duel-grid">${item.fighters.map((p,j)=>{maybePhoto(p);return `<div class="duelist ${item.winner===j?'win':''}"><div class="mini-avatar">${safe(p.emoji)}${imageMarkup(p)}</div><div style="flex:1;min-width:0"><small>${safe(p.name)}</small><strong>${p.value} PTS ${item.winner===j?'🏆':''}</strong><div class="power-bar"><span style="width:${p.value}%"></span></div></div></div>`;}).join('')}</div>`;
       $('battleRows').append(row);
-    },baseDelay+i*680);gameTimers.push(t);
   });
 }
 async function copyResult(){
@@ -257,6 +273,7 @@ $('declineBtn').addEventListener('click',()=>respond(false));
 $('botBtn').addEventListener('click',()=>send('bot'));
 $('passBid').addEventListener('click',giveUpBid);
 $('placeBid').addEventListener('click',submitBid);
+$('avoidBid').addEventListener('click',avoidBid);
 $('leaveMatch').addEventListener('click',()=>{if(confirm('Sair da partida? Seu adversário também voltará ao lobby.'))backLobby();});
 $('goLobby').addEventListener('click',backLobby);
 $('copyBattle').addEventListener('click',copyResult);
