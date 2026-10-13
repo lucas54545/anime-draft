@@ -1,0 +1,46 @@
+name: Atualizar retratos do Anime Draft V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build-portrait-manifest.cjs'
+      - 'portrait-config.json'
+      - '.github/workflows/portrait-images.yml'
+  schedule:
+    - cron: '17 5 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portrait-manifest
+  cancel-in-progress: false
+
+jobs:
+  portraits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Consultar elencos e retratos (Jikan / AniList)
+        run: node scripts/build-portrait-manifest.cjs
+      - name: Salvar enderecos validados
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/portrait-map.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Fotos dos personagens: atualizar indice de retratos V1"
+            git push
+          else
+            echo "Nenhuma alteracao no catalogo."
+          fi
