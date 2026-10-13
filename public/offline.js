@@ -144,13 +144,14 @@ function start(mode){
   timers();
   const first=($('nickname')?.value||'Jogador 1').trim()||'Jogador 1';
   const squad=mode==='local2v2';
-  st={mode,names:[first,mode==='bot'?'BOT':'Jogador 2'],members:[],
+  st={mode,names:[first,['bot','mystery','roulette','tournament'].includes(mode)?'BOT':'Jogador 2'],members:[],
     budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
     current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
     winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
+  if(mode==='tournament'){st.tournament=newTournament(first);st.names[1]=st.tournament.opponents[0];}
   show('offline');
-  root().innerHTML='<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':squad?'2v2 LOCAL • QUATRO JOGADORES':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 20 MOEDAS POR EQUIPE</span></div>'+
-    '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">'+(squad?'Dupla A: jogadores 1 e 2. Dupla B: jogadores 3 e 4. As moedas e cinco posições são compartilhadas por dupla.':'Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.')+'</p>'+
+  root().innerHTML=(mode==='tournament'?tournamentBracket():'')+'<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':mode==='mystery'?'LEILÃO MISTERIOSO':mode==='roulette'?'ROLETA':mode==='tournament'?'TORNEIO DE 8':squad?'2v2 LOCAL • QUATRO JOGADORES':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 20 MOEDAS POR EQUIPE</span></div>'+
+    '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">'+(squad?'Dupla A: jogadores 1 e 2. Dupla B: jogadores 3 e 4. As moedas e cinco posições são compartilhadas por dupla.':mode==='mystery'?'O personagem fica escondido até você escolher a posição. Você só conhece o anime durante os lances.':mode==='roulette'?'Todo leilão tem uma roleta de efeitos: moedas extras, 7 segundos, 15 segundos e portais especiais.':mode==='tournament'?'Oito participantes no mata-mata! Dispute quartas, semifinal e final contra bots com 10 leilões por partida.':'Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.')+'</p>'+
     '<div class="offline-fields">'+(squad?
       Array.from({length:4},(_,i)=>'<label class="field-label">'+(i<2?'🔷 DUPLA A':'🔶 DUPLA B')+' · JOGADOR '+(i+1)+'<input id="offlineName'+i+'" maxlength="20" value="'+esc(i===0?first:'Jogador '+(i+1))+'"></label>').join(''):
       '<label class="field-label">JOGADOR 1<input id="offlineName0" maxlength="20" value="'+esc(first)+'"></label>'+
@@ -163,6 +164,7 @@ function start(mode){
     }else{
       st.names[0]=$('offlineName0').value.trim().slice(0,20)||'Jogador 1';
       if(mode==='local')st.names[1]=$('offlineName1').value.trim().slice(0,20)||'Jogador 2';
+      if(mode==='tournament'){st.tournament=newTournament(st.names[0]);st.names[1]=st.tournament.opponents[0];}
     }
     draw();
   };
@@ -219,7 +221,8 @@ function schedule(){
 }
 function auction(){
   const turn=st.turn,next=st.bid+1,neg=st.bidMode==='avoid'?st.bid-1:-1;
-  root().innerHTML=heading(st.mode==='roulette'?'🎰 ROLETA • '+(st.turnSeconds||10)+' SEGUNDOS':'LEILÃO • 10 SEGUNDOS','Escolha comprar +1 ou evitar -1: quem evitar perde as moedas no limbo.')+
+  root().innerHTML=(st.mode==='tournament'?'<div class="tournament-active">🏆 '+['QUARTAS DE FINAL','SEMIFINAL','GRANDE FINAL'][st.tournament.stage]+' · '+esc(st.names[0])+' VS '+esc(st.names[1])+'</div>'+tournamentBracket():'')+
+    heading(st.mode==='roulette'?'🎰 ROLETA • '+(st.turnSeconds||10)+' SEGUNDOS':'LEILÃO • 10 SEGUNDOS','Escolha comprar +1 ou evitar -1: quem evitar perde as moedas no limbo.')+
     (st.mode==='roulette'&&st.roulette?'<div class="roulette-event"><div class="roulette-wheel">🎰</div><div><span>EFEITO DA RODADA</span><h3>'+st.roulette.icon+' '+esc(st.roulette.name)+'</h3><p>'+esc(st.roulette.desc)+'</p></div></div>':'')+
     '<div class="offline-budgets"><div><b>'+esc(st.names[0])+'</b><span>🪙 '+st.budgets[0]+' moedas</span></div><strong>VS</strong><div><b>'+esc(st.names[1])+'</b><span>🪙 '+st.budgets[1]+' moedas</span></div></div>'+
     '<div class="auction-pair single-auction">'+card(st.current)+'</div>'+
@@ -318,4 +321,7 @@ function battle(){
 $('localBotBtn').addEventListener('click',()=>start('bot'));
 $('localDuelBtn').addEventListener('click',()=>start('local'));
 $('localSquadBtn').addEventListener('click',()=>start('local2v2'));
+$('localMysteryBtn').addEventListener('click',()=>start('mystery'));
+$('localRouletteBtn').addEventListener('click',()=>start('roulette'));
+$('localTournamentBtn').addEventListener('click',()=>start('tournament'));
 })();
