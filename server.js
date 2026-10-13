@@ -88,6 +88,7 @@ function scheduleTurn(room){
       const next=room.bidMode==='avoid'?room.currentBid-1:room.currentBid+1;
       const firstAvoid=room.bidMode===null&&canBuy(room,0)&&Math.random()<.23;
       if(firstAvoid&&room.budgets[1]>=1)raiseBid(room,1,-1);
+      else if(room.bidMode===null&&room.budgets[1]>=1)raiseBid(room,1,1);
       else if(room.bidMode==='avoid'&&-next<=room.budgets[1]&&-next<=desired&&Math.random()<.65)raiseBid(room,1,next);
       else if(room.bidMode!=='avoid'&&next<=room.budgets[1]&&next<=desired&&Math.random()<.78)raiseBid(room,1,next);
       else concludeAuction(room,'bot aceitou o lance');
@@ -230,8 +231,10 @@ function message(ws, data) {
     if(!room||room.phase!=='auction')return error(ws,'Não existe um leilão ativo.');
     const idx=room.players.findIndex(p=>p?.token===user.token);
     if(idx!==room.turn)return error(ws,'Ainda não é sua vez.');
+    // Não é possível pegar grátis/desistir antes de o primeiro lance ser dado.
+    if(room.bidMode===null||room.leader<0)return error(ws,'O leilão precisa de pelo menos um lance antes de aceitar ou desistir.');
     if(Date.now()>room.deadline){concludeAuction(room,'tempo esgotado');return;}
-    concludeAuction(room,room.bidMode===null?'personagem aceito gratuitamente':'jogador encerrou lance');return;
+    concludeAuction(room,room.bidMode==='avoid'?'jogador aceitou o personagem gratuitamente':'jogador desistiu de cobrir');return;
   }
   if(kind==='place'){
     const room=rooms.get(user.roomId);
