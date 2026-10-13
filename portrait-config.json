@@ -1,0 +1,577 @@
+{
+  "version": "1.0",
+  "animeIds": {
+    "Naruto": 20,
+    "Dragon Ball": 223,
+    "One Piece": 21,
+    "Bleach": 269,
+    "Demon Slayer": 38000,
+    "Jujutsu Kaisen": 40748,
+    "My Hero Academia": 31964,
+    "Attack on Titan": 16498,
+    "Black Clover": 34572,
+    "Chainsaw Man": 44511,
+    "One Punch Man": 30276,
+    "Tensei Shitara Slime": 37430,
+    "Maou Gakuin": 40496,
+    "Madoka Magica": 9756,
+    "Hunter x Hunter": 11061,
+    "Fullmetal Alchemist: Brotherhood": 5114,
+    "Death Note": 1535,
+    "Tokyo Ghoul": 22319,
+    "Sword Art Online": 11757,
+    "Fairy Tail": 6702,
+    "JoJo's Bizarre Adventure": 14719,
+    "Mob Psycho 100": 32182,
+    "Solo Leveling": 52299,
+    "Frieren: Beyond Journey's End": 52991,
+    "Spy x Family": 50265,
+    "Blue Lock": 49596,
+    "Haikyuu!!": 20583,
+    "Dr. Stone": 38691,
+    "Fire Force": 38671,
+    "Re:Zero": 31240,
+    "Overlord": 29803,
+    "The Seven Deadly Sins": 23755,
+    "Code Geass": 1575,
+    "Pokémon": 527,
+    "Yu Yu Hakusho": 392,
+    "Gintama": 918,
+    "Dandadan": 57334,
+    "Vinland Saga": 37521
+  },
+  "aliases": {
+    "naruto": [
+      "Uzumaki Naruto"
+    ],
+    "sasuke": [
+      "Uchiha Sasuke"
+    ],
+    "sakura": [
+      "Haruno Sakura"
+    ],
+    "kakashi": [
+      "Hatake Kakashi"
+    ],
+    "konohamaru": [
+      "Sarutobi Konohamaru",
+      "Konohamaru Sarutobi"
+    ],
+    "goku": [
+      "Goku Son",
+      "Gokuu Son",
+      "Son Gokuu",
+      "Kakarot"
+    ],
+    "vegeta": [
+      "Vegeta"
+    ],
+    "gohan": [
+      "Gohan Son",
+      "Gohan Son",
+      "Gohan"
+    ],
+    "piccolo": [
+      "Piccolo"
+    ],
+    "yamcha": [
+      "Yamucha",
+      "Yamcha"
+    ],
+    "satan": [
+      "Hercule",
+      "Mr. Satan",
+      "Mister Satan",
+      "Satan",
+      "Hercule Satan"
+    ],
+    "luffy": [
+      "Luffy Monkey D.",
+      "Monkey D. Luffy",
+      "Monkey D Luffy",
+      "Luffy"
+    ],
+    "zoro": [
+      "Zoro Roronoa",
+      "Zoro",
+      "Roronoa Zoro"
+    ],
+    "sanji": [
+      "Vinsmoke Sanji",
+      "Sanji Vinsmoke"
+    ],
+    "nami": [
+      "Nami"
+    ],
+    "usopp": [
+      "Usopp",
+      "Ussop"
+    ],
+    "chopper": [
+      "Chopper Tony Tony",
+      "Tony Tony Chopper"
+    ],
+    "ichigo": [
+      "Kurosaki Ichigo"
+    ],
+    "rukia": [
+      "Kuchiki Rukia"
+    ],
+    "renji": [
+      "Abarai Renji"
+    ],
+    "kon": [
+      "Kon"
+    ],
+    "tanjiro": [
+      "Kamado Tanjirou",
+      "Tanjirou Kamado",
+      "Tanjiro Kamado"
+    ],
+    "nezuko": [
+      "Kamado Nezuko"
+    ],
+    "zenitsu": [
+      "Agatsuma Zenitsu"
+    ],
+    "inosuke": [
+      "Hashibira Inosuke"
+    ],
+    "murata": [
+      "Murata"
+    ],
+    "yuji": [
+      "Itadori Yuuji",
+      "Itadori Yuji",
+      "Yuuji Itadori"
+    ],
+    "gojo": [
+      "Gojou Satoru",
+      "Satoru Gojou",
+      "Gojo Satoru"
+    ],
+    "megumi": [
+      "Fushiguro Megumi"
+    ],
+    "nobara": [
+      "Kugisaki Nobara"
+    ],
+    "miwa": [
+      "Miwa Kasumi"
+    ],
+    "deku": [
+      "Midoriya Izuku",
+      "Deku"
+    ],
+    "bakugo": [
+      "Bakugou Katsuki",
+      "Katsuki Bakugou"
+    ],
+    "todoroki": [
+      "Todoroki Shouto",
+      "Shouto Todoroki"
+    ],
+    "ochaco": [
+      "Uraraka Ochako",
+      "Ochako Uraraka",
+      "Ochaco Uraraka"
+    ],
+    "mineta": [
+      "Mineta Minoru"
+    ],
+    "eren": [
+      "Eren Jaeger",
+      "Eren Yeager",
+      "Jaeger Eren",
+      "Yeager Eren"
+    ],
+    "mikasa": [
+      "Ackerman Mikasa",
+      "Ackermann Mikasa"
+    ],
+    "armin": [
+      "Arlert Armin"
+    ],
+    "jean": [
+      "Kirstein Jean",
+      "Kirschtein Jean"
+    ],
+    "asta": [
+      "Asta"
+    ],
+    "yuno": [
+      "Yuno",
+      "Yuno Grinberryall"
+    ],
+    "noelle": [
+      "Silva Noelle"
+    ],
+    "sekke": [
+      "Bronzazza Sekke",
+      "Sekke Bronzazza"
+    ],
+    "denji": [
+      "Denji"
+    ],
+    "power": [
+      "Power"
+    ],
+    "aki": [
+      "Hayakawa Aki"
+    ],
+    "kobeni": [
+      "Higashiyama Kobeni"
+    ],
+    "saitama": [
+      "Saitama"
+    ],
+    "genos": [
+      "Genos"
+    ],
+    "mumen": [
+      "Mumen Rider",
+      "Mumen Rider",
+      "Mumen Rider"
+    ],
+    "king": [
+      "King"
+    ],
+    "rimuru": [
+      "Tempest Rimuru",
+      "Rimuru Tempest",
+      "Limule Tempest",
+      "Rimuru"
+    ],
+    "milim": [
+      "Nava Milim",
+      "Milim Nava"
+    ],
+    "veldora": [
+      "Tempest Veldora",
+      "Veldora Tempest"
+    ],
+    "shion": [
+      "Shion"
+    ],
+    "benimaru": [
+      "Benimaru"
+    ],
+    "gobta": [
+      "Gobta"
+    ],
+    "anos": [
+      "Voldigoad Anos",
+      "Anos Voldigoad",
+      "Anos Voldigoard"
+    ],
+    "misha": [
+      "Necron Misha"
+    ],
+    "sasha": [
+      "Necron Sasha"
+    ],
+    "lay": [
+      "Glanzudlii Lay",
+      "Lay Gransdori"
+    ],
+    "misa": [
+      "Ilioroagu Misa",
+      "Misa Iriologue"
+    ],
+    "gusta": [
+      "Gusta"
+    ],
+    "madoka": [
+      "Kaname Madoka"
+    ],
+    "homura": [
+      "Akemi Homura"
+    ],
+    "sayaka": [
+      "Miki Sayaka"
+    ],
+    "mami": [
+      "Tomoe Mami"
+    ],
+    "kyoko": [
+      "Sakura Kyouko",
+      "Kyouko Sakura",
+      "Kyoko Sakura"
+    ],
+    "kyubey": [
+      "Kyuubey",
+      "Kyubey",
+      "Kyubee"
+    ],
+    "gon": [
+      "Freecss Gon",
+      "Freecss Gon",
+      "Gon Freecss"
+    ],
+    "killua": [
+      "Zoldyck Killua",
+      "Zaoldyeck Killua"
+    ],
+    "kurapika": [
+      "Kurapika"
+    ],
+    "edward": [
+      "Elric Edward"
+    ],
+    "alphonse": [
+      "Elric Alphonse"
+    ],
+    "roy": [
+      "Mustang Roy"
+    ],
+    "light": [
+      "Yagami Light"
+    ],
+    "lawliet": [
+      "L Lawliet",
+      "L",
+      "L. Lawliet",
+      "L"
+    ],
+    "ryuk": [
+      "Ryuk",
+      "Ryuuku"
+    ],
+    "kaneki": [
+      "Kaneki Ken"
+    ],
+    "touka": [
+      "Kirishima Touka"
+    ],
+    "arima": [
+      "Arima Kishou",
+      "Kishou Arima"
+    ],
+    "kirito": [
+      "Kirigaya Kazuto",
+      "Kazuto Kirigaya",
+      "Kirito"
+    ],
+    "asuna": [
+      "Yuuki Asuna",
+      "Asuna Yuuki"
+    ],
+    "sinon": [
+      "Asada Shino",
+      "Shino Asada",
+      "Sinon"
+    ],
+    "natsu": [
+      "Dragneel Natsu"
+    ],
+    "erza": [
+      "Scarlet Erza"
+    ],
+    "gray": [
+      "Fullbuster Gray",
+      "Grey Fullbuster"
+    ],
+    "jotaro": [
+      "Kujo Joutarou",
+      "Kuujou Joutarou",
+      "Jotaro Kujo",
+      "Kujo Jotaro"
+    ],
+    "dio": [
+      "Dio Brando",
+      "DIO"
+    ],
+    "giorno": [
+      "Giovanna Giorno"
+    ],
+    "mob": [
+      "Kageyama Shigeo",
+      "Mob",
+      "Shigeo Kageyama"
+    ],
+    "reigen": [
+      "Arataka Reigen"
+    ],
+    "ritsu": [
+      "Kageyama Ritsu"
+    ],
+    "jinwoo": [
+      "Sung Jin-Woo",
+      "Sung Jinwoo",
+      "Sung Jin-Woo",
+      "Jin-Woo Sung",
+      "Jinwoo Sung"
+    ],
+    "cha": [
+      "Cha Hae-in",
+      "Cha Hae-In",
+      "Hae-in Cha"
+    ],
+    "igris": [
+      "Igris",
+      "Igrit",
+      "Igris the Bloodred"
+    ],
+    "frieren": [
+      "Frieren"
+    ],
+    "fern": [
+      "Fern"
+    ],
+    "frierenstark": [
+      "Stark"
+    ],
+    "loid": [
+      "Forger Loid",
+      "Twilight",
+      "Loid Forger"
+    ],
+    "yor": [
+      "Forger Yor",
+      "Yor Briar",
+      "Yor Forger"
+    ],
+    "anya": [
+      "Forger Anya"
+    ],
+    "isagi": [
+      "Isagi Yoichi"
+    ],
+    "rin": [
+      "Itoshi Rin"
+    ],
+    "nagi": [
+      "Nagi Seishirou",
+      "Nagi Seishiro"
+    ],
+    "hinata": [
+      "Hinata Shouyou",
+      "Shouyou Hinata",
+      "Hinata Shoyo"
+    ],
+    "kageyama": [
+      "Kageyama Tobio"
+    ],
+    "oikawa": [
+      "Oikawa Tooru",
+      "Toru Oikawa"
+    ],
+    "senku": [
+      "Ishigami Senkuu",
+      "Senkuu Ishigami"
+    ],
+    "tsukasa": [
+      "Shishiou Tsukasa",
+      "Tsukasa Shishio"
+    ],
+    "chrome": [
+      "Chrome",
+      "Kohaku Chrome"
+    ],
+    "shinra": [
+      "Kusakabe Shinra"
+    ],
+    "arthur": [
+      "Boyle Arthur"
+    ],
+    "firebenimaru": [
+      "Shinmon Benimaru",
+      "Benimaru Shinmon"
+    ],
+    "subaru": [
+      "Natsuki Subaru"
+    ],
+    "emilia": [
+      "Emilia"
+    ],
+    "rem": [
+      "Rem"
+    ],
+    "ainz": [
+      "Ainz Ooal Gown",
+      "Momonga"
+    ],
+    "albedo": [
+      "Albedo"
+    ],
+    "shalltear": [
+      "Bloodfallen Shalltear"
+    ],
+    "meliodas": [
+      "Meliodas"
+    ],
+    "escanor": [
+      "Escanor"
+    ],
+    "ban": [
+      "Ban"
+    ],
+    "lelouch": [
+      "Lamperouge Lelouch",
+      "Lelouch vi Britannia"
+    ],
+    "suzaku": [
+      "Kururugi Suzaku"
+    ],
+    "cc": [
+      "C.C.",
+      "C.C",
+      "C2"
+    ],
+    "ash": [
+      "Satoshi",
+      "Ash Ketchum",
+      "Ash"
+    ],
+    "pikachu": [
+      "Pikachu"
+    ],
+    "charizard": [
+      "Lizardon",
+      "Charizard"
+    ],
+    "yusuke": [
+      "Urameshi Yuusuke",
+      "Yuusuke Urameshi"
+    ],
+    "hiei": [
+      "Hiei"
+    ],
+    "yuyukurama": [
+      "Kurama",
+      "Minamino Shuuichi",
+      "Youko Kurama"
+    ],
+    "gintoki": [
+      "Sakata Gintoki"
+    ],
+    "gintamakagura": [
+      "Kagura"
+    ],
+    "takasugi": [
+      "Takasugi Shinsuke"
+    ],
+    "momo": [
+      "Ayase Momo",
+      "Momo Ayase"
+    ],
+    "okarun": [
+      "Takakura Ken",
+      "Ken Takakura",
+      "Okarun"
+    ],
+    "aira": [
+      "Shiratori Aira"
+    ],
+    "thorfinn": [
+      "Thorfinn"
+    ],
+    "askeladd": [
+      "Askeladd",
+      "Askeladd"
+    ],
+    "thorkell": [
+      "Thorkell"
+    ]
+  }
+}
