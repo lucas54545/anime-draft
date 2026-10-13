@@ -260,21 +260,54 @@ async function pacedPhotoRequest(url,options){
   try{return await fetch(url,{...options,signal:controller.signal,headers:{'User-Agent':'AnimeDraftBattle/6.0 (fan game)',...(options?.headers||{})}});}
   finally{clearTimeout(timeout);}
 }
+// O Mister Satan tem o ID 9377 no MyAnimeList; buscar por 'Satan' pode trazer outro personagem.
+const FIXED_PORTRAIT_IDS={satan:9377};
+const PICTURE_ALIASES={satan:['Hercule','Mr. Satan','Mister Satan'],
+  okarun:['Ken Takakura','Okarun'],cc:['C.C.'],mob:['Shigeo Kageyama','Mob'],
+  jinwoo:['Sung Jinwoo','Jin-Woo Sung'],frierenstark:['Stark'],lawliet:['L Lawliet','L'],
+  deku:['Izuku Midoriya'],goku:['Son Goku'],light:['Light Yagami'],ash:['Satoshi','Ash Ketchum']};
 async function searchPortrait(person){
-  const q=encodeURIComponent(person.name);
-  try{
-    const res=await pacedPhotoRequest('https://api.jikan.moe/v4/characters?q='+q+'&limit=20');
-    if(res.ok){
-      const json=await res.json(),items=json.data||[];
-      const ranked=items.map(x=>({x,score:pictureMatch(x.name,person.name)})).sort((a,b)=>b.score-a.score);
-      const best=ranked[0];
-      if(best?.score>=.50){const link=best.x.images?.jpg?.image_url||best.x.images?.webp?.image_url;if(link)return link;}
-    }
-  }catch(e){console.log('Jikan portrait:',e.message);}
-  try{
-    const res=await pacedPhotoRequest('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:'query ($search: String) { Character(search: $search) { name { full native } image { large } } }',variables:{search:person.name}})});
-    if(res.ok){const json=await res.json(),c=json.data?.Character;if(c&&pictureMatch(c.name?.full,person.name)>=.5)return c.image?.large;}
-  }catch(e){console.log('AniList portrait:',e.message);}
+  const id=FIXED_PORTRAIT_IDS[person.id];
+  if(id){
+    try{
+      const r=await pacedPhotoRequest('https://api.jikan.moe/v4/characters/'+id);
+      if(r.ok){const data=(await r.json()).data;
+        if(data?.mal_id===id || pictureMatch(data?.name,person.name)>=.66)
+          return data?.images?.jpg?.image_url||data?.images?.webp?.image_url||null;
+      }
+    }catch(e){console.log('Retrato fixo:',e.message);}
+    // Foto oficial do personagem; usada somente se a API de personagens falhar.
+    if(person.id==='satan')return 'https://images.microcms-assets.io/assets/79a305090571443fb06a9260d669fe02/fc8a3dec2f03474cb5b0b1d81b9a1358/chara_satan.png';
+  }
+  const names=[person.name,...(PICTURE_ALIASES[person.id]||[])];
+  for(const name of [...new Set(names)]){
+    try{
+      const res=await pacedPhotoRequest('https://api.jikan.moe/v4/characters?q='+encodeURIComponent(name)+'&limit=20');
+      if(res.ok){
+        const json=await res.json(),items=json.data||[];
+        const ranked=items.map(x=>({x,score:pictureMatch(x.name,name)})).sort((a,b)=>b.score-a.score);
+        const best=ranked[0];
+        const words=pictureWords(name);
+        if(best?.score>=(words.length<=1?.95:.82)){
+          const url=best.x.images?.jpg?.image_url||best.x.images?.webp?.image_url;
+          if(url)return url;
+        }
+      }
+    }catch(e){console.log('Jikan portrait:',e.message);}
+  }
+  for(const name of [...new Set(names)].slice(0,2)){
+    try{
+      const query='query ($search: String) { Character(search: $search) { name { full native } image { large } } }';
+      const res=await pacedPhotoRequest('https://graphql.anilist.co',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({query,variables:{search:name}})
+      });
+      if(res.ok){
+        const json=await res.json(),c=json.data?.Character;
+        if(c&&pictureMatch(c.name?.full,name)>=.8&&c.image?.large)return c.image.large;
+      }
+    }catch(e){console.log('AniList portrait:',e.message);}
+  }
   return null;
 }
 async function portraitBytes(character){
