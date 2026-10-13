@@ -65,19 +65,27 @@ function quit(){timers();st=null;show('lobby');}
 function start(mode){
   timers();
   const first=($('nickname')?.value||'Jogador 1').trim()||'Jogador 1';
-  st={mode,names:[first,mode==='bot'?'BOT':'Jogador 2'],budgets:[20,20],
-      teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
-      current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
-      winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
+  const squad=mode==='local2v2';
+  st={mode,names:[first,mode==='bot'?'BOT':'Jogador 2'],members:[],
+    budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
+    current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
+    winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
   show('offline');
-  root().innerHTML='<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 20 MOEDAS CADA</span></div>'+
-    '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.</p>'+
-    '<div class="offline-fields"><label class="field-label">JOGADOR 1<input id="offlineName0" maxlength="20" value="'+esc(first)+'"></label>'+
-    (mode==='local'?'<label class="field-label">JOGADOR 2<input id="offlineName1" maxlength="20" value="Jogador 2"></label>':'')+'</div>'+
+  root().innerHTML='<div class="offline-topline"><span class="phase-pill">🎮 '+(mode==='bot'?'CONTRA BOT':squad?'2v2 LOCAL • QUATRO JOGADORES':'2 JOGADORES NO MESMO APARELHO')+'</span><span>🪙 20 MOEDAS POR EQUIPE</span></div>'+
+    '<h3 class="offline-title">PREPARE O DRAFT!</h3><p class="offline-desc">'+(squad?'Dupla A: jogadores 1 e 2. Dupla B: jogadores 3 e 4. As moedas e cinco posições são compartilhadas por dupla.':'Serão 10 leilões, com 1 personagem por vez. Depois de vencer, escolha a posição ANTES de revelar o poder.')+'</p>'+
+    '<div class="offline-fields">'+(squad?
+      Array.from({length:4},(_,i)=>'<label class="field-label">'+(i<2?'🔷 DUPLA A':'🔶 DUPLA B')+' · JOGADOR '+(i+1)+'<input id="offlineName'+i+'" maxlength="20" value="'+esc(i===0?first:'Jogador '+(i+1))+'"></label>').join(''):
+      '<label class="field-label">JOGADOR 1<input id="offlineName0" maxlength="20" value="'+esc(first)+'"></label>'+
+      (mode==='local'?'<label class="field-label">JOGADOR 2<input id="offlineName1" maxlength="20" value="Jogador 2"></label>':''))+'</div>'+
     '<div class="offline-actions">'+btn('COMEÇAR →','offlineStart')+btn('← VOLTAR','offlineBack','btn-outline')+'</div>';
   $('offlineStart').onclick=()=>{
-    st.names[0]=$('offlineName0').value.trim().slice(0,20)||'Jogador 1';
-    if(mode==='local')st.names[1]=$('offlineName1').value.trim().slice(0,20)||'Jogador 2';
+    if(squad){
+      st.members=Array.from({length:4},(_,i)=>($('offlineName'+i).value.trim().slice(0,20)||'Jogador '+(i+1)));
+      st.names=[st.members[0]+' + '+st.members[1],st.members[2]+' + '+st.members[3]];
+    }else{
+      st.names[0]=$('offlineName0').value.trim().slice(0,20)||'Jogador 1';
+      if(mode==='local')st.names[1]=$('offlineName1').value.trim().slice(0,20)||'Jogador 2';
+    }
     draw();
   };
   $('offlineBack').onclick=quit;
@@ -219,8 +227,8 @@ function battle(){
     historyPanel()+'<div class="offline-actions">'+btn('🔄 REVANCHE','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
   $('offlineAgain').onclick=()=>{
     if(!st)return;
-    const names=[...st.names],mode=st.mode;
-    st={mode,names,budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
+    const names=[...st.names],mode=st.mode,members=[...(st.members||[])];
+    st={mode,names,members,budgets:[20,20],teams:[Array(5).fill(null),Array(5).fill(null)],round:0,seen:[],
       current:null,leader:-1,turn:0,bid:0,deadline:0,phase:'setup',
       winner:-1,price:0,bidMode:null,avoider:-1,reason:'',history:[],lastBeepSecond:10};
     sound('confirm');draw();
@@ -229,4 +237,5 @@ function battle(){
 }
 $('localBotBtn').addEventListener('click',()=>start('bot'));
 $('localDuelBtn').addEventListener('click',()=>start('local'));
+$('localSquadBtn').addEventListener('click',()=>start('local2v2'));
 })();
