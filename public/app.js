@@ -335,6 +335,8 @@ function renderArena(){
   $('roundLabel').textContent=(r.mode==='squad'?'2v2 • ':'')+'LEILÃO '+String(Math.min(r.round+1,10)).padStart(2,'0')+' / 10';
   $('steps').innerHTML=Array.from({length:10},(_,i)=>'<span class="'+(i<r.round?'done':i===r.round?'active':'')+'"></span>').join('');
   $('matchName0').textContent=r.names[0];$('matchName1').textContent=r.names[1];
+  $('matchSideLabel0').textContent=r.mode==='squad'?'DUPLA A':'JOGADOR 1';
+  $('matchSideLabel1').textContent=r.mode==='squad'?'DUPLA B':'JOGADOR 2';
   $('budget0').textContent=r.budgets[0];$('budget1').textContent=r.budgets[1];
   $('arenaPhase').textContent=isAuction?'LEILÃO • UM PERSONAGEM':isPlace?'ESCOLHA DO ATRIBUTO':'PODERES REVELADOS';
   $('auctionTitle').textContent=isAuction?(r.mode==='squad'?'QUAL DUPLA VAI LEVAR?':'QUAL JOGADOR VAI LEVAR?'):isPlace?'ESCOLHA O ATRIBUTO ANTES DE REVELAR':'PERSONAGEM REVELADO!';
@@ -419,7 +421,7 @@ function renderBattle(data){
     maybePhoto(left);maybePhoto(right);
     const row=document.createElement('div');row.className='battle-row battle-row-v9';
     row.style.setProperty('--battle-delay',(i*85)+'ms');
-    row.innerHTML=`<div class="versus-text left ${item.winner===0?'win':''}"><small>JOGADOR 1</small><b>${safe(left.name)}</b><strong>${left.value}</strong></div><div class="versus-middle"><div class="middle-photos"><div class="mid-photo ${item.winner===0?'win':''}">${imageMarkup(left)}</div><div class="mid-vs-wrap"><span>VS</span><em>${safe(ATTR[i])}</em></div><div class="mid-photo ${item.winner===1?'win':''}">${imageMarkup(right)}</div></div></div><div class="versus-text right ${item.winner===1?'win':''}"><small>JOGADOR 2</small><b>${safe(right.name)}</b><strong>${right.value}</strong></div>`;
+    row.innerHTML=`<div class="versus-text left ${item.winner===0?'win':''}"><small>${data.mode==='squad'?'DUPLA A':'JOGADOR 1'}</small><b>${safe(left.name)}</b><strong>${left.value}</strong></div><div class="versus-middle"><div class="middle-photos"><div class="mid-photo ${item.winner===0?'win':''}">${imageMarkup(left)}</div><div class="mid-vs-wrap"><span>VS</span><em>${safe(ATTR[i])}</em></div><div class="mid-photo ${item.winner===1?'win':''}">${imageMarkup(right)}</div></div></div><div class="versus-text right ${item.winner===1?'win':''}"><small>${data.mode==='squad'?'DUPLA B':'JOGADOR 2'}</small><b>${safe(right.name)}</b><strong>${right.value}</strong></div>`;
     area.append(row);
   });
 }
