@@ -186,16 +186,16 @@ function battle(){
     const x=a?.stats?.[i]??0,y=b?.stats?.[i]??0;
     total[0]+=x;total[1]+=y;
     if(x>y)scores[0]++;else if(y>x)scores[1]++;
-    return '<div class="anime-versus-row offline-fight">'+
-      '<div class="versus-side left '+(x>y?'win':'')+'"><div class="duel-face">'+(a?portrait(a):'?')+'</div><span class="duel-person">'+(a?esc(a.name):'—')+'</span><b class="duel-score">'+x+'</b></div>'+
-      '<div class="versus-center"><small>ROUND '+String(i+1).padStart(2,'0')+'</small><strong>'+attr+'</strong></div>'+
-      '<div class="versus-side right '+(y>x?'win':'')+'"><b class="duel-score">'+y+'</b><span class="duel-person">'+(b?esc(b.name):'—')+'</span><div class="duel-face">'+(b?portrait(b):'?')+'</div></div></div>';
+    return '<div class="offline-fight offline-fight-v9">'+
+      '<div class="versus-text left '+(x>y?'win':'')+'"><small>JOGADOR 1</small><b>'+(a?esc(a.name):'—')+'</b><strong>'+x+'</strong></div>'+
+      '<div class="versus-middle"><div class="middle-photos"><div class="mid-photo '+(x>y?'win':'')+'">'+(a?portrait(a):'?')+'</div><div class="mid-vs-wrap"><span>VS</span><em>'+attr+'</em></div><div class="mid-photo '+(y>x?'win':'')+'">'+(b?portrait(b):'?')+'</div></div></div>'+
+      '<div class="versus-text right '+(y>x?'win':'')+'"><small>JOGADOR 2</small><b>'+(b?esc(b.name):'—')+'</b><strong>'+y+'</strong></div></div>';
   }).join('');
   const winner=total[0]===total[1]?-1:total[0]>total[1]?0:1;
   root().innerHTML='<div class="offline-final"><span class="phase-pill">⚡ BATALHA FINAL • 5 CONFRONTOS</span><h2>'+(winner<0?'EMPATE!':esc(st.names[winner]).toUpperCase()+' VENCEU!')+'</h2>'+
     '<div class="offline-score"><div><small>'+esc(st.names[0])+'</small><strong>'+total[0]+'</strong><span>'+scores[0]+' atributos vencidos</span></div><b>VS</b>'+
     '<div><small>'+esc(st.names[1])+'</small><strong>'+total[1]+'</strong><span>'+scores[1]+' atributos vencidos</span></div></div></div>'+
-    '<div class="offline-compact-fights"><div class="versus-header"><span>'+esc(st.names[0])+'</span><span>ATRIBUTOS</span><span>'+esc(st.names[1])+'</span></div>'+fights+'</div>'+
+    '<div class="offline-compact-fights"><div class="battle-lane-head"><span>'+esc(st.names[0])+'</span><span>FOTOS NO CENTRO</span><span>'+esc(st.names[1])+'</span></div>'+fights+'</div>'+
     '<div class="offline-actions">'+btn('🔄 JOGAR NOVAMENTE','offlineAgain')+btn('← VOLTAR','offlineHome','btn-outline')+'</div>';
   $('offlineAgain').onclick=()=>start(st.mode);$('offlineHome').onclick=quit;
 }
