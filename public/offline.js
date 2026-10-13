@@ -215,9 +215,9 @@ function battle(){
     total[0]+=x;total[1]+=y;
     if(x>y)scores[0]++;else if(y>x)scores[1]++;
     return '<div class="offline-fight offline-fight-v9" style="--battle-delay:'+(i*85)+'ms">'+
-      '<div class="versus-text left '+(x>y?'win':'')+'"><small>JOGADOR 1</small><b>'+(a?esc(a.name):'—')+'</b><strong>'+x+'</strong></div>'+
+      '<div class="versus-text left '+(x>y?'win':'')+'"><small>'+(st.mode==='local2v2'?'DUPLA A':'JOGADOR 1')+'</small><b>'+(a?esc(a.name):'—')+'</b><strong>'+x+'</strong></div>'+
       '<div class="versus-middle"><div class="middle-photos"><div class="mid-photo '+(x>y?'win':'')+'">'+(a?portrait(a):'?')+'</div><div class="mid-vs-wrap"><span>VS</span><em>'+attr+'</em></div><div class="mid-photo '+(y>x?'win':'')+'">'+(b?portrait(b):'?')+'</div></div></div>'+
-      '<div class="versus-text right '+(y>x?'win':'')+'"><small>JOGADOR 2</small><b>'+(b?esc(b.name):'—')+'</b><strong>'+y+'</strong></div></div>';
+      '<div class="versus-text right '+(y>x?'win':'')+'"><small>'+(st.mode==='local2v2'?'DUPLA B':'JOGADOR 2')+'</small><b>'+(b?esc(b.name):'—')+'</b><strong>'+y+'</strong></div></div>';
   }).join('');
   const winner=total[0]===total[1]?-1:total[0]>total[1]?0:1;
   root().innerHTML='<div class="offline-final"><span class="phase-pill">⚡ BATALHA FINAL • 5 CONFRONTOS</span><h2>'+(winner<0?'EMPATE!':esc(st.names[winner]).toUpperCase()+' VENCEU!')+'</h2>'+
